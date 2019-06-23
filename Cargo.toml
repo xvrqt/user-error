@@ -1,0 +1,7 @@
+[package]
+name = "user-error"
+version = "0.1.0"
+authors = ["Amy <git@xvrqt.com>"]
+edition = "2018"
+
+[dependencies]
