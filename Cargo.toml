@@ -5,3 +5,4 @@ authors = ["Amy <git@xvrqt.com>"]
 edition = "2018"
 
 [dependencies]
+colorful = "0.2.1"
