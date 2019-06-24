@@ -19,26 +19,22 @@ use colorful::Colorful;
 // Eq/PartialEq
 // Addition
 // std::convert::From (static str errors and string errors)
+// Clear reasons/subtleties
 
 /********************
  * Helper Functions *
  ********************/
 
-// Returns the application name (falls back on "The Application")
+// Keeps the default summary formatting DRY
 #[inline]
-fn get_application_name() -> String {
+fn default_summary() -> String {
 	// Pull the name from the first command line argument
-	String::from(std::env::args().next().as_ref()
+	let name = String::from(std::env::args().next().as_ref()
 				.map(|s| Path::new(s))
 				.and_then(|p| p.file_stem())
 				.and_then(|s| s.to_str())
-				.unwrap_or("The application"))
-}
-
-// Keep the default string formatting DRY
-#[inline]
-fn default_summary() -> String {
-	format!("{} encountered an unknown error.", get_application_name())
+				.unwrap_or("The application"));
+	format!("{} encountered an unknown error.", name)
 }
 
 /// The eponymous struct.
@@ -228,6 +224,28 @@ impl UserError {
 		}
 	}
 
+	/// Modifies the UserError by removing all reasons.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	///	let mut e = UserError::hardcoded("Failed to build project",
+    ///									&["Reason #1",
+    ///									  "Reason #2",
+    ///									  "Reason #3"],
+    ///									&["Try again?"]);
+    ///	e.clear_reasons();
+    ///	eprintln!("{}", e);
+	/// ```	
+    /// This results in the following being printed to stderr:
+	/// ```bash
+	/// Error: Failed to build project
+	/// Try again?
+    /// ```
+	pub fn clear_reasons(&mut self) {
+		self.reasons = None;
+	}
+
 	/// Returns a formatted, possibly colored String listing additional subtleties to the error. If the terminal supports color, subtleties will be printed dimly. Each String in the Vec<String> will be printed on its own line.
 	/// Format: <subtleties>
 	///
@@ -315,6 +333,28 @@ impl UserError {
 			}
 		}
 	}
+
+	/// Modifies the UserError by removing all subtly.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	///	let mut e = UserError::hardcoded("Failed to build project",
+	///									&["Reasons!"],
+    ///									&["Tip #1",
+    ///									  "Tip #2",
+    ///									  "Tip #3"]);
+    ///	e.clear_subtleties();
+    ///	eprintln!("{}", e);
+	/// ```	
+    /// This results in the following being printed to stderr:
+	/// ```bash
+	/// Error: Failed to build project
+	/// - Reasons!
+    /// ```
+	pub fn clear_subtleties(&mut self) {
+		self.subtleties = None;
+	}
 }
 
 /// Required to implement the Error trait
@@ -359,36 +399,43 @@ mod tests {
     #[test]
     fn test() {
 
-    	// A mock system call to open a file
-    	fn open_file(path: &str) -> Result<(), String> {
-    			Err(format!("Failed to open file: {}", path))
-    	}
+    	let mut e = UserError::hardcoded("Failed to build project",
+										&["Reasons!"],
+    									&["Tip #1",
+    									  "Tip #2",
+    									  "Tip #3"]);
+    	e.clear_subtleties();
+    	eprintln!("{}", e);
+    	// // A mock system call to open a file
+    	// fn open_file(path: &str) -> Result<(), String> {
+    	// 		Err(format!("Failed to open file: {}", path))
+    	// }
 
-    	// A mock system call to check if path requires root permissions
-    	fn needs_root(path: &str) -> bool {
-    		true
-    	}
+    	// // A mock system call to check if path requires root permissions
+    	// fn needs_root(path: &str) -> bool {
+    	// 	true
+    	// }
 
     	// Builds an unspecified project
-    	fn build_project(path: &str) -> Result<(), UserError> {
+  //   	fn build_project(path: &str) -> Result<(), UserError> {
 
-    		match open_file(path) {
-    			Ok(_) => Ok(()),
-    			Err(e) => {
-    				let mut error = UserError::new(String::from("Failed to build project"),
-    														vec![e],
-    														vec![format!("Try: touch {}", path)]);
-    				if needs_root(path) {
-    					error.add_subtly("You may need to ask your administrator to run this command for you")
-    				}
-    				Err(error)
-    			}
-    		}
-    	}
+  //   		match open_file(path) {
+  //   			Ok(_) => Ok(()),
+  //   			Err(e) => {
+  //   				let mut error = UserError::new(String::from("Failed to build project"),
+  //   														vec![e],
+  //   														vec![format!("Try: touch {}", path)]);
+  //   				if needs_root(path) {
+  //   					error.add_subtly("You may need to ask your administrator to run this command for you")
+  //   				}
+  //   				Err(error)
+  //   			}
+  //   		}
+  //   	}
 
-		match build_project("/user_data.db") {
-	        Err(e) => eprintln!("{}", e),
-	        _ => println!("Project built successfully!"),
-	    }
+		// match build_project("/user_data.db") {
+	 //        Err(e) => eprintln!("{}", e),
+	 //        _ => println!("Project built successfully!"),
+	 //    }
     }
 }
