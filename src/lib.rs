@@ -50,15 +50,16 @@ impl UserError {
 		}
 	}
 
-	// These combine the data of Error instances with the functions of the default ColorScheme
-	// fn print_summary(&self) -> colorful::core::color_string::CString {
-		// (*DEFAULT_COLOR_SCHEME.summary)(self.summary.as_str())
-	// }
+	/// These combine the data of Error instances with the functions of the default ColorScheme
+	fn print_summary(&self) -> String {
+		format!("{} {}{}", "Error:".color(Color::White).bg_color(Color::Red).bold(), self.summary.as_str().color(Color::Red).bold(), "\n")
+	}
 }
 
 impl fmt::Display for UserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", "Error:".color(Color::White).bg_color(Color::Red).bold(), self.summary.as_str())
+        f.write_str(&self.print_summary())
+        	.and(f.write_str(&self.print_summary()))
     }
 }
 
