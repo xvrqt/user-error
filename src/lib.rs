@@ -3,147 +3,205 @@
 #![deny(missing_docs,
         missing_debug_implementations, missing_copy_implementations,
         trivial_casts, trivial_numeric_casts,
-        unstable_features,
+        unstable_features, unsafe_code,
         unused_import_braces, unused_qualifications)]
 
 // Standard Library Dependencies
 use std::fmt;
 use std::path::Path;
-use std::sync::Mutex;
 use std::error::Error;
 
 // Third Party Dependencies
-// use colorful::HSL;
-// use colorful::RGB;
 use colorful::Color;
 use colorful::Colorful;
-use colorful::core::color_string::CString;
 
-// Print an error summary, reasons for the error, ways to correct and other info
-// Keep track of original errors, and error codes for internal processing 
-// Have multiple convenient constructors
-// Print & (Print & Exit) commands
-// Have a dynamic ColorScheme
+// Helper Functions
+fn get_application_name() -> String {
+	// Pull the name from the first command line argument
+	String::from(std::env::args().next().as_ref()
+				.map(|s| Path::new(s))
+				.and_then(|p| p.file_stem())
+				.and_then(|s| s.to_str())
+				.unwrap_or("The application"))
+}
+
+fn default_summary() -> String {
+	format!("{} encountered an unknown error.", get_application_name())
+}
 
 /// The eponymous struct.
 #[derive(Debug)]
 pub struct UserError {
-	// These fields are used to print the error. Title should be a summary of the error (e.g. "Failed to process files"). Reasons should be a list of reasons for the summary (e.g. "Direction 'foo' doesn't exist"). Subtlties is dimly printed text that can be used to provide more verbose solutions the use can take to resolve the error, (e.g. "Try running the following command to create the directory: mkdir foo"). 
+	/// These fields are used to print the error. Title should be a summary of the error (e.g. "Failed to process files"). Reasons should be a list of reasons for the summary (e.g. "Direction 'foo' doesn't exist"). Subtlties is dimly printed text that can be used to provide more verbose solutions the use can take to resolve the error, (e.g. "Try running the following command to create the directory: mkdir foo"). 
 	summary: String,
 	reasons: Option<Vec<String>>,
-	sublties: Option<Vec<String>>,
-
-	// These optional fields can make be used internally for dealing with errors
-	code: Option<usize>,
-	original_error: Option<Box<dyn Error>>,
-
-	// This optional field can be supplied to change the color scheme for this error only
-	color_scheme: Option<ColorScheme>
+	subtleties: Option<Vec<String>>
 }
 
 impl UserError {
 
-	/// Generate a simple user facing error
-	pub fn new(summary: &str) -> UserError {
+	/// Generates an error by consuming heap allocated arguemnts. This method is better if you're dynamically creating error messages. If you're using hardcoded error messages, see UserError::hardcoded below.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	/// let error_summary    = String::from("Failed to build project");
+	/// let error_reasons    = vec![String::from("Database could not be parsed"), String::from("File \"main.db\" not found")];
+	/// let error_subtleties = vec![String::from("Try: touch main.db"), String::from("This command will create and empty database file the program can use ")];
+	/// let e = UserError::new(error_summary, error_reasons, error_subtleties);
+	/// ```
+	pub fn new(mut summary: String, reasons: Vec<String>, subtleties: Vec<String>) -> UserError {
+		if summary.is_empty() {
+			summary = default_summary();
+		}
 		UserError {
-			summary: String::from(summary),
-			..Default::default()
+			summary,
+			reasons: Some(reasons),
+			subtleties: Some(subtleties)
 		}
 	}
 
-	/// Used to print "Error:" followed by the UserError's summary
-	fn print_summary(&self) -> String {
-		format!("{} {}{}", 
-			unsafe { (DEFAULT_COLOR_SCHEME.summary_header)("Error:") }, 
-			unsafe { (DEFAULT_COLOR_SCHEME.summary)(self.summary.as_str()) }, 
-			"\n"
+	/// Generate an error using hardcoded string references (&str), making it a quick and dirty way to create a pretty printed error message.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	/// let e = UserError::hardcoded("Failed to build project", 
+	///								&[	"Database could not be parsed", 
+	///									"File \"main.db\" not found"], 
+	///								&[	"Try: touch main.db", 
+	///									"This command will create and empty database file the program can use "]);
+	/// ```
+	pub fn hardcoded(summary: &str, reasons: &[&str], subtleties: &[&str]) -> UserError {
+		let reasons = reasons.into_iter().map(|s| String::from(*s)).collect();
+		let subtleties = subtleties.into_iter().map(|s| String::from(*s)).collect();
+		UserError {
+			summary: String::from(summary),
+			reasons: Some(reasons),
+			subtleties: Some(subtleties)
+		}
+	}
+
+	/// Returns a formatted, possibly colored String listing the error summary, prepended by an error header ("Error: "). If the terminal supports color, the error header will be printed boldly in white upon a red background; the error summary will be printed boldly in red upon a black background. If no error summary is provided the default is: <application name> encountered an unknown error.
+	/// Format: "Error: <summary>"
+	/// Example Output:
+	/// Error: Failed to build project
+	///
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	/// let e = UserError::hardcoded("Failed to build project", 
+	///								&[	"Database could not be parsed", 
+	///									"File \"main.db\" not found"], 
+	///								&[	"Try: touch main.db", 
+	///									"This command will create and empty database file the program can use "]);
+	/// eprintln!("{}", e.summary()); // Error: Failed to build project
+	/// ```
+	pub fn summary(&self) -> String {
+		format!("{} {}",
+			String::from("Error:").color(Color::White).bg_color(Color::Red).bold(),
+			self.summary.clone().color(Color::Red).bold()
 		)
 	}
 
-	/// Used to print bulleted lists of detailed reasons for the error listed in summary
-	fn print_reasons(&self) -> String {
+	/// Returns a formatted, possibly colored String listing the reasons for the error. If the terminal supports color, the bullet point ('-') will be colored yellow. Each String in the Vec<String> will be printed on its own line.
+	/// Format: - <reason>
+	/// Example Output:
+	/// - Database could not be parsed
+	/// - File "main.db" not found
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	/// let e = UserError::hardcoded("Failed to build project", 
+	///								&[	"Database could not be parsed", 
+	///									"File \"main.db\" not found"], 
+	///								&[	"Try: touch main.db", 
+	///									"This command will create and empty database file the program can use "]);
+	///
+	/// eprintln!("{}", e.reasons()); // - Database could not be parsed
+	///								  // - File "main.db" no found
+	/// ```
+	pub fn reasons(&self) -> String {
 		match &self.reasons {
 			Some(v) => {
-				let t: Vec<String> = v.iter().map(|s| { let mut ss = s.clone(); ss.insert_str(0, "- "); ss }).collect();
-				format!("{}", t.join("\n"))
+				let mut b = String::with_capacity(v.len() * 32);
+				v.iter().for_each(|s| {
+					b.push_str(format!("{} {}\n", 
+								"-".color(Color::Yellow),
+								s.as_str()).as_str());
+				});
+				b.pop();
+				b
 			},
-			None => format!("")
+			None => String::from("")
+		}
+	}
+
+	/// Returns a formatted, possibly colored String listing additional subtleties to the error. If the terminal supports color, subtleties will be printed dimly. Each String in the Vec<String> will be printed on its own line.
+	/// Format: <subtleties>
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	/// let e = UserError::hardcoded("Failed to build project", 
+	///								&[	"Database could not be parsed", 
+	///									"File \"main.db\" not found"], 
+	///								&[	"Try: touch main.db", 
+	///									"This command will create and empty database file the program can use "]);
+	///
+	/// eprintln!("{}", e.subtleties()); // Try: touch main.db 
+	///								     // This command will create and empty database file the program can use
+	/// ```
+	pub fn subtleties(&self) -> String {
+		match &self.subtleties {
+			Some(v) => {
+				let mut b = String::with_capacity(v.len() * 32);
+				v.iter().for_each(|s| {
+					b.push_str(&format!("{}\n", 
+								s.as_str()
+									.color(Color::White)
+									.dim()));
+				});
+				// Remove the last linebreak
+				b.pop();
+				b
+			},
+			None => String::from("")
 		}
 	}
 }
 
+/// Required to implement the Error trait
 impl fmt::Display for UserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(&self.print_summary())
-        	.and(f.write_str(&self.print_reasons()))
+    	let mut summary = self.summary();
+    	let mut reasons = self.reasons();
+    	let subtleties = self.subtleties();
+
+    	// Concatenate line breaks if necessary
+    	if !reasons.is_empty() || !subtleties.is_empty() {
+    		summary.push('\n');
+    	}
+
+    	if !reasons.is_empty() && !subtleties.is_empty() {
+    		reasons.push('\n');
+    	}
+
+        f.write_str(&format!("{}{}{}", summary, reasons, subtleties))
     }
 }
 
-/// Default implementation for UserError attempts to print: {application name} has stopped working.
+/// Default implementation for UserError attempts to print: <application name> has encountered an unknown error.
 impl Default for UserError {
 	fn default() -> Self {
-		let name = String::from(std::env::args().next().as_ref()
-					.map(|s| Path::new(s))
-					.and_then(|p| p.file_stem())
-					.and_then(|s| s.to_str())
-					.unwrap_or("The application"));
-		
 		UserError {
-			summary: format!("{} has stopped working.", name),
+			summary: default_summary(),
 			reasons: None,
-			sublties: None,
-
-			code: None,
-			original_error: None,
-
-			color_scheme: None
+			subtleties: None
 		}
 	}
-}
-
-/// Contains function pointers to functions that apply the appropriate styling to the different parts of the error message
-struct ColorScheme {
-	summary_header: &'static Fn(&str)-> CString,
-	summary: &'static Fn(&str)-> CString
-	
-	// reasons: Color,
-	// reasons_bullet: Color,
-
-	// sublties: Color
-}
-
-impl Default for ColorScheme {
-	fn default() -> Self {
-		ColorScheme {
-			summary_header: &color_summary_header,
-			summary: &color_summary
-		}
-	}
-}
-
-/// Static function pointers to the default styling functions. Can be overwritten using the ColorScheme interface if you don't want to pass your own ColorScheme with every call.  
-static mut DEFAULT_COLOR_SCHEME: ColorScheme = ColorScheme {
-	summary_header: &color_summary_header,
-	summary: &color_summary
-};
-
-/// List of static function pointers used by DEFAULT_COLOR_SCHEME that make up the default styling implementation
-///
-/// Default styling for the "Error" part of the summary
-fn color_summary_header(s: &str) -> CString {
-	s.color(Color::White).bg_color(Color::Red).bold()
-}
-
-/// Default styling for the error summary
-fn color_summary(s: &str) -> CString {
-	s.color(Color::Red).bold()
-}
-
-/// Required override so that UserError (which contains and Option<ColorScheme> can implement the trait Debug which is reequired for std::Error type.
-impl fmt::Debug for ColorScheme {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "gay")
-    }
 }
 
 #[cfg(test)]
@@ -154,41 +212,37 @@ mod tests {
 		Err(ue)
 	}
 
-	fn color(s: &str) -> CString {
-		s.color(Color::Red).bg_color(Color::White).bold()
-	}
+  //   #[test]
+  //   fn test() {
+		// let ue = UserError::new("Failed to build project", &["I'm gay", "I'm a girl"], &["fuck u", "and u"]);
+		// match produce_error(ue) {
+	 //        Err(e) => eprintln!("{}", e),
+	 //        _ => println!("No error"),
+	 //    }
+  //   }
 
-    #[test]
-    fn test() {
-		let ue = UserError::new("Failed to build project");
-		match produce_error(ue) {
-	        Err(e) => eprintln!("{}", e),
-	        _ => println!("No error"),
-	    }
-    }
+ //    #[test]
+ //    fn default() {
+ //    	let ue = UserError {
+	// 		..Default::default()
+	// 	};
+	// 	match produce_error(ue) {
+	//         Err(e) => eprintln!("{}", e),
+	//         _ => println!("No error"),
+	//     }
+ //    }
 
-    #[test]
-    fn default() {
-    	let ue = UserError {
-			..Default::default()
-		};
-		match produce_error(ue) {
-	        Err(e) => eprintln!("{}", e),
-	        _ => println!("No error"),
-	    }
-    }
+ //    #[test]
+ //    fn reasons() {
+ //    	let ue = UserError {
+ //    		summary: String::from("This error has actual reasons!"),
+ //    		reasons: Some(vec![String::from("I'm gay"), String::from("I love girls")]),
+ //    		..Default::default()
+ //    	};
 
-    #[test]
-    fn reasons() {
-    	let ue = UserError {
-    		summary: String::from("This error has actual reasons!"),
-    		reasons: Some(vec![String::from("I'm gay"), String::from("I love girls")]),
-    		..Default::default()
-    	};
-
-		match produce_error(ue) {
-	        Err(e) => eprintln!("{}", e),
-	        _ => println!("No error"),
-	    }
-    }
+	// 	match produce_error(ue) {
+	//         Err(e) => eprintln!("{}", e),
+	//         _ => println!("No error"),
+	//     }
+ //    }
 }
