@@ -380,29 +380,4 @@ mod tests {
 	        _ => println!("Project built successfully!"),
 	    }
     }
-
- //    #[test]
- //    fn default() {
- //    	let ue = UserError {
-	// 		..Default::default()
-	// 	};
-	// 	match produce_error(ue) {
-	//         Err(e) => eprintln!("{}", e),
-	//         _ => println!("No error"),
-	//     }
- //    }
-
- //    #[test]
- //    fn reasons() {
- //    	let ue = UserError {
- //    		summary: String::from("This error has actual reasons!"),
- //    		reasons: Some(vec![String::from("I'm gay"), String::from("I love girls")]),
- //    		..Default::default()
- //    	};
-
-	// 	match produce_error(ue) {
-	//         Err(e) => eprintln!("{}", e),
-	//         _ => println!("No error"),
-	//     }
- //    }
 }
