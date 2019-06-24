@@ -15,7 +15,12 @@ use std::error::Error;
 use colorful::Color;
 use colorful::Colorful;
 
-// Helper Functions
+/********************
+ * Helper Functions *
+ ********************/
+
+// Returns the application name (falls back on "The Application")
+#[inline]
 fn get_application_name() -> String {
 	// Pull the name from the first command line argument
 	String::from(std::env::args().next().as_ref()
@@ -25,6 +30,8 @@ fn get_application_name() -> String {
 				.unwrap_or("The application"))
 }
 
+// Keep the default string formatting DRY
+#[inline]
 fn default_summary() -> String {
 	format!("{} encountered an unknown error.", get_application_name())
 }
@@ -33,9 +40,9 @@ fn default_summary() -> String {
 #[derive(Debug)]
 pub struct UserError {
 	/// These fields are used to print the error. Title should be a summary of the error (e.g. "Failed to process files"). Reasons should be a list of reasons for the summary (e.g. "Direction 'foo' doesn't exist"). Subtlties is dimly printed text that can be used to provide more verbose solutions the use can take to resolve the error, (e.g. "Try running the following command to create the directory: mkdir foo"). 
-	summary: String,
-	reasons: Option<Vec<String>>,
-	subtleties: Option<Vec<String>>
+	summary:    String,
+	reasons:    Option<Vec<String>>,
+	subtleties: Option<Vec<String>>,
 }
 
 impl UserError {
@@ -57,7 +64,7 @@ impl UserError {
 		UserError {
 			summary,
 			reasons: Some(reasons),
-			subtleties: Some(subtleties)
+			subtleties: Some(subtleties),
 		}
 	}
 
@@ -78,7 +85,22 @@ impl UserError {
 		UserError {
 			summary: String::from(summary),
 			reasons: Some(reasons),
-			subtleties: Some(subtleties)
+			subtleties: Some(subtleties),
+		}
+	}
+
+	/// Generate an error with only a summary using a hardcoded string reference (&str). A quick and dirty way to create a simple pretty printed error message.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	/// let e = UserError::simple("Failed to build project");
+	/// ```
+	pub fn simple(summary: &str) -> UserError {
+		UserError {
+			summary: String::from(summary),
+			reasons: None,
+			subtleties: None,
 		}
 	}
 
