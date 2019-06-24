@@ -216,8 +216,7 @@ impl UserError {
 		match &mut self.reasons {
 			Some(v) => { v.push(reason); },
 			None => {
-				let v = vec![reason];
-				self.reasons = Some(v);
+				self.reasons = Some(vec![reason]);
 			}
 		}
 	}
@@ -252,6 +251,54 @@ impl UserError {
 				b
 			},
 			None => String::from("")
+		}
+	}
+
+	/// Modifies the UserError by adding in additional subtly. Useful if you're passing this error up the call stack while cleaning up and want each calling function to be able to annotate what went wrong before displaying to the user.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	///	// A mock system call to open a file
+    ///	fn open_file(path: &str) -> Result<(), String> {
+    ///		Err(format!("Failed to open file: {}", path))
+    ///	}
+    ///
+    ///	// A mock system call to check if path requires root permissions
+    ///	fn needs_root(path: &str) -> bool {
+    ///		true
+    ///	}
+    ///
+    ///	// Builds an unspecified project
+    ///	fn build_project(path: &str) -> Result<(), UserError> {
+    ///		match open_file(path) {
+    ///			Ok(_) => Ok(()),
+    ///			Err(e) => {
+    ///				let mut error = UserError::new(String::from("Failed to build project"),
+    ///														vec![e],
+    ///														vec![format!("Try: touch {}", path)]);let mut error = UserError::simple("Failed to build project");
+    ///				// Conditionally give the user an additional hint
+    ///				if needs_root(path) {
+    ///					error.add_subtly("You may need to ask your administrator to run this command for you");
+    ///				}
+    ///				Err(error)
+    ///			}
+    ///		}
+    ///	}
+    ///
+	///	match build_project("/user_data.db") {
+	///        Err(e) => eprintln!("{}", e),
+	///        _ => println!("Project built successfully!"),
+	///    }
+	/// 
+    /// ```
+	pub fn add_subtly(&mut self, subtly: &str) {
+		let subtly = String::from(subtly);
+		match &mut self.subtleties {
+			Some(v) => { v.push(subtly); },
+			None => {
+				self.subtleties = Some(vec![subtly]);
+			}
 		}
 	}
 }
@@ -298,50 +345,39 @@ mod tests {
     #[test]
     fn test() {
 
-    	// An untested function that may fail to process a number
-    	fn unstable_function(n: isize) -> Result<(), &'static str> {
-    		if n >= 0 {
-    			Ok(())
-    		} else {
-    			Err("Negative numbers cannot be processed!")
-    		}
+    	// A mock system call to open a file
+    	fn open_file(path: &str) -> Result<(), String> {
+    			Err(format!("Failed to open file: {}", path))
     	}
 
-    	// Processes a list of numbers. Reports errors but doesn't halt the processing upon encountering one.
-    	fn process_numbers(numbers: Vec<isize>) -> Result<(), UserError> {
-    		let mut bad_nums = Vec::new();
-    		
-    		// Process a list of numbers
-    		for (i, n) in numbers.iter().enumerate() {
-    			match unstable_function(*n) {
-    				Err(_) => {
-    					bad_nums.push((i, n));
-    				},
-    				Ok(_) => ()
-    			}
-    		}
+    	// A mock system call to check if path requires root permissions
+    	fn needs_root(path: &str) -> bool {
+    		true
+    	}
 
-    		// Check if any of the numbers failed to process
-    		match  bad_nums.len() {
-    			0 => Ok(()),
-    			_ => {
-    				// Return an error that tells the user which inputs failed
-    				let summary = format!("Failed to process {} inputs", bad_nums.len());
-    				let mut e = UserError::simple(&summary);
-    				for (i, n) in bad_nums {
-						let reason = format!("Failed input #{} with value ({})", i, n);
-    					e.add_reason(&reason);
+    	// Builds an unspecified project
+    	fn build_project(path: &str) -> Result<(), UserError> {
+
+    		match open_file(path) {
+    			Ok(_) => Ok(()),
+    			Err(e) => {
+    				let mut error = UserError::new(String::from("Failed to build project"),
+    														vec![e],
+    														vec![format!("Try: touch {}", path)]);
+    				// error.add_reason(&e);
+    				// error.add_subtly(&format!("Try: touch {}", path));
+    				// Conditionally give the user an additional hint
+    				if needs_root(path) {
+    					error.add_subtly("You may need to ask your administrator to run this command for you")
     				}
-    				Err(e)
+    				Err(error)
     			}
     		}
     	}
 
-    	// Process the numbers 
-    	let numbers = vec![0, 1, 2, -2, 50, -1, -100, 22, 2, 2];
-		match process_numbers(numbers) {
+		match build_project("/user_data.db") {
 	        Err(e) => eprintln!("{}", e),
-	        _ => println!("List processed successfully!"),
+	        _ => println!("Project built successfully!"),
 	    }
     }
 
