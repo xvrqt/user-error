@@ -3,13 +3,13 @@
 #![deny(missing_docs,
         missing_debug_implementations, missing_copy_implementations,
         trivial_casts, trivial_numeric_casts,
-        unsafe_code,
         unstable_features,
         unused_import_braces, unused_qualifications)]
 
 // Standard Library Dependencies
 use std::fmt;
 use std::path::Path;
+use std::sync::Mutex;
 use std::error::Error;
 
 // Third Party Dependencies
@@ -17,6 +17,7 @@ use std::error::Error;
 // use colorful::RGB;
 use colorful::Color;
 use colorful::Colorful;
+use colorful::core::color_string::CString;
 
 // Print an error summary, reasons for the error, ways to correct and other info
 // Keep track of original errors, and error codes for internal processing 
@@ -42,7 +43,7 @@ pub struct UserError {
 
 impl UserError {
 
-	/// Generate a new user facing error
+	/// Generate a simple user facing error
 	pub fn new(summary: &str) -> UserError {
 		UserError {
 			summary: String::from(summary),
@@ -50,26 +51,42 @@ impl UserError {
 		}
 	}
 
-	/// These combine the data of Error instances with the functions of the default ColorScheme
+	/// Used to print "Error:" followed by the UserError's summary
 	fn print_summary(&self) -> String {
-		format!("{} {}{}", "Error:".color(Color::White).bg_color(Color::Red).bold(), self.summary.as_str().color(Color::Red).bold(), "\n")
+		format!("{} {}{}", 
+			unsafe { (DEFAULT_COLOR_SCHEME.summary_header)("Error:") }, 
+			unsafe { (DEFAULT_COLOR_SCHEME.summary)(self.summary.as_str()) }, 
+			"\n"
+		)
+	}
+
+	/// Used to print bulleted lists of detailed reasons for the error listed in summary
+	fn print_reasons(&self) -> String {
+		match &self.reasons {
+			Some(v) => {
+				let t: Vec<String> = v.iter().map(|s| { let mut ss = s.clone(); ss.insert_str(0, "- "); ss }).collect();
+				format!("{}", t.join("\n"))
+			},
+			None => format!("")
+		}
 	}
 }
 
 impl fmt::Display for UserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(&self.print_summary())
-        	.and(f.write_str(&self.print_summary()))
+        	.and(f.write_str(&self.print_reasons()))
     }
 }
 
+/// Default implementation for UserError attempts to print: {application name} has stopped working.
 impl Default for UserError {
 	fn default() -> Self {
 		let name = String::from(std::env::args().next().as_ref()
-						.map(|s| Path::new(s))
-						.and_then(|p| p.file_stem())
-						.and_then(|s| s.to_str())
-						.unwrap_or("The application"));
+					.map(|s| Path::new(s))
+					.and_then(|p| p.file_stem())
+					.and_then(|s| s.to_str())
+					.unwrap_or("The application"));
 		
 		UserError {
 			summary: format!("{} has stopped working.", name),
@@ -84,10 +101,10 @@ impl Default for UserError {
 	}
 }
 
-/// You can provide an alternative color scheme for the error printing using this struct
-#[derive(Debug)]
+/// Contains function pointers to functions that apply the appropriate styling to the different parts of the error message
 struct ColorScheme {
-	// summary: Box<Fn(&str) -> colorful::core::color_string::CString>
+	summary_header: &'static Fn(&str)-> CString,
+	summary: &'static Fn(&str)-> CString
 	
 	// reasons: Color,
 	// reasons_bullet: Color,
@@ -95,17 +112,56 @@ struct ColorScheme {
 	// sublties: Color
 }
 
+impl Default for ColorScheme {
+	fn default() -> Self {
+		ColorScheme {
+			summary_header: &color_summary_header,
+			summary: &color_summary
+		}
+	}
+}
+
+/// Static function pointers to the default styling functions. Can be overwritten using the ColorScheme interface if you don't want to pass your own ColorScheme with every call.  
+static mut DEFAULT_COLOR_SCHEME: ColorScheme = ColorScheme {
+	summary_header: &color_summary_header,
+	summary: &color_summary
+};
+
+/// List of static function pointers used by DEFAULT_COLOR_SCHEME that make up the default styling implementation
+///
+/// Default styling for the "Error" part of the summary
+fn color_summary_header(s: &str) -> CString {
+	s.color(Color::White).bg_color(Color::Red).bold()
+}
+
+/// Default styling for the error summary
+fn color_summary(s: &str) -> CString {
+	s.color(Color::Red).bold()
+}
+
+/// Required override so that UserError (which contains and Option<ColorScheme> can implement the trait Debug which is reequired for std::Error type.
+impl fmt::Debug for ColorScheme {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", "gay")
+    }
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
 
+	fn produce_error(ue: UserError) -> Result<(), UserError> {
+		Err(ue)
+	}
+
+	fn color(s: &str) -> CString {
+		s.color(Color::Red).bg_color(Color::White).bold()
+	}
+
     #[test]
     fn test() {
-		fn produce_error() -> Result<(), UserError> {
-			Err(UserError::new("Failed to build project"))
-		}
-
-		match produce_error() {
+		let ue = UserError::new("Failed to build project");
+		match produce_error(ue) {
 	        Err(e) => eprintln!("{}", e),
 	        _ => println!("No error"),
 	    }
@@ -113,13 +169,24 @@ mod tests {
 
     #[test]
     fn default() {
-    	fn produce_error() -> Result<(), UserError> {
-			Err(UserError {
-				..Default::default()
-			})
-		}
+    	let ue = UserError {
+			..Default::default()
+		};
+		match produce_error(ue) {
+	        Err(e) => eprintln!("{}", e),
+	        _ => println!("No error"),
+	    }
+    }
 
-		match produce_error() {
+    #[test]
+    fn reasons() {
+    	let ue = UserError {
+    		summary: String::from("This error has actual reasons!"),
+    		reasons: Some(vec![String::from("I'm gay"), String::from("I love girls")]),
+    		..Default::default()
+    	};
+
+		match produce_error(ue) {
 	        Err(e) => eprintln!("{}", e),
 	        _ => println!("No error"),
 	    }
