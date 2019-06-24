@@ -15,6 +15,11 @@ use std::error::Error;
 use colorful::Color;
 use colorful::Colorful;
 
+// Clone
+// Eq/PartialEq
+// Addition
+// std::convert::From (static str errors and string errors)
+
 /********************
  * Helper Functions *
  ********************/
@@ -53,8 +58,10 @@ impl UserError {
 	/// ```
 	/// use user_error::UserError;
 	/// let error_summary    = String::from("Failed to build project");
-	/// let error_reasons    = vec![String::from("Database could not be parsed"), String::from("File \"main.db\" not found")];
-	/// let error_subtleties = vec![String::from("Try: touch main.db"), String::from("This command will create and empty database file the program can use ")];
+	/// let error_reasons    = vec![String::from("Database could not be parsed"), 
+	///								String::from("File \"main.db\" not found")];
+	/// let error_subtleties = vec![String::from("Try: touch main.db"), 
+	///								String::from("This command will create and empty database file the program can use ")];
 	/// let e = UserError::new(error_summary, error_reasons, error_subtleties);
 	/// ```
 	pub fn new(mut summary: String, reasons: Vec<String>, subtleties: Vec<String>) -> UserError {
@@ -140,7 +147,7 @@ impl UserError {
 	///									"This command will create and empty database file the program can use "]);
 	///
 	/// eprintln!("{}", e.reasons()); // - Database could not be parsed
-	///								  // - File "main.db" no found
+	///								  // - File "main.db" not found
 	/// ```
 	pub fn reasons(&self) -> String {
 		match &self.reasons {
@@ -287,10 +294,17 @@ impl UserError {
     ///	}
     ///
 	///	match build_project("/user_data.db") {
-	///        Err(e) => eprintln!("{}", e),
-	///        _ => println!("Project built successfully!"),
-	///    }
+	/// 	Err(e) => eprintln!("{}", e),
+	///     _ => println!("Project built successfully!"),
+	/// }
 	/// 
+    /// ```
+    /// This results in the following being printed to stderr:
+	/// ```bash
+	/// Error: Failed to build project
+	///	- Failed to open file: /user_data.db
+	///	Try: touch /user_data.db
+	///	You may need to ask your administrator to run this command for you
     /// ```
 	pub fn add_subtly(&mut self, subtly: &str) {
 		let subtly = String::from(subtly);
@@ -364,9 +378,6 @@ mod tests {
     				let mut error = UserError::new(String::from("Failed to build project"),
     														vec![e],
     														vec![format!("Try: touch {}", path)]);
-    				// error.add_reason(&e);
-    				// error.add_subtly(&format!("Try: touch {}", path));
-    				// Conditionally give the user an additional hint
     				if needs_root(path) {
     					error.add_subtly("You may need to ask your administrator to run this command for you")
     				}
