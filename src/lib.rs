@@ -9,10 +9,12 @@
 
 // Standard Library Dependencies
 use std::fmt;
+use std::path::Path;
+use std::error::Error;
 
 // Third Party Dependencies
-use colorful::HSL;
-use colorful::RGB;
+// use colorful::HSL;
+// use colorful::RGB;
 use colorful::Color;
 use colorful::Colorful;
 
@@ -24,60 +26,73 @@ use colorful::Colorful;
 
 /// The eponymous struct.
 #[derive(Debug)]
-struct Error {
+pub struct UserError {
 	// These fields are used to print the error. Title should be a summary of the error (e.g. "Failed to process files"). Reasons should be a list of reasons for the summary (e.g. "Direction 'foo' doesn't exist"). Subtlties is dimly printed text that can be used to provide more verbose solutions the use can take to resolve the error, (e.g. "Try running the following command to create the directory: mkdir foo"). 
 	summary: String,
-	// reasons: Option<&[&str]>,
-	// sublties: Option<&[&str]>,
+	reasons: Option<Vec<String>>,
+	sublties: Option<Vec<String>>,
 
 	// These optional fields can make be used internally for dealing with errors
-	// code: Option<usize>,
-	// original_error: Option<Error>,
+	code: Option<usize>,
+	original_error: Option<Box<dyn Error>>,
 
 	// This optional field can be supplied to change the color scheme for this error only
-	// color_scheme: Option<ColorScheme>
+	color_scheme: Option<ColorScheme>
 }
 
-impl fmt::Display for Error {
+impl UserError {
+
+	/// Generate a new user facing error
+	pub fn new(summary: &str) -> UserError {
+		UserError {
+			summary: String::from(summary),
+			..Default::default()
+		}
+	}
+
+	// These combine the data of Error instances with the functions of the default ColorScheme
+	// fn print_summary(&self) -> colorful::core::color_string::CString {
+		// (*DEFAULT_COLOR_SCHEME.summary)(self.summary.as_str())
+	// }
+}
+
+impl fmt::Display for UserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", "Error:".color(Color::White).bg_color(Color::Red).bold(), self.summary.as_str().color(Color::Red))
+        write!(f, "{} {}", "Error:".color(Color::White).bg_color(Color::Red).bold(), self.summary.as_str())
     }
 }
 
-impl Error {
-	pub fn new(summary: &str) -> Error {
-		Error {
-			summary: String::from(summary)
+impl Default for UserError {
+	fn default() -> Self {
+		let name = String::from(std::env::args().next().as_ref()
+						.map(|s| Path::new(s))
+						.and_then(|p| p.file_stem())
+						.and_then(|s| s.to_str())
+						.unwrap_or("The application"));
+		
+		UserError {
+			summary: format!("{} has stopped working.", name),
+			reasons: None,
+			sublties: None,
+
+			code: None,
+			original_error: None,
+
+			color_scheme: None
 		}
 	}
 }
 
-// impl fmt::Debug for Error {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "{{ file: {}, line: {} }}", file!(), line!())
-//     }
-// }
-
-// You can provide an alternative color scheme for the error printing using this struct
-// struct ColorScheme {
-// 	title: Color,
+/// You can provide an alternative color scheme for the error printing using this struct
+#[derive(Debug)]
+struct ColorScheme {
+	// summary: Box<Fn(&str) -> colorful::core::color_string::CString>
 	
-// 	reasons: Color,
-// 	reasons_bullet: Color,
+	// reasons: Color,
+	// reasons_bullet: Color,
 
-// 	sublties: Color
-// }
-
-// The default ColorScheme for error printing
-// let default_color_scheme = ColorScheme {
-// 	title: Color::Red,
-
-// 	reasons: Color::White,
-// 	reasons_bullet: Color::Yellow,
-
-// 	subtle: Color::Gray
-// };
-
+	// sublties: Color
+}
 
 #[cfg(test)]
 mod tests {
@@ -85,24 +100,27 @@ mod tests {
 
     #[test]
     fn test() {
-		fn produce_error() -> Result<(), Error> {
-			Err(Error::new("Failed to build project"))
+		fn produce_error() -> Result<(), UserError> {
+			Err(UserError::new("Failed to build project"))
 		}
 
 		match produce_error() {
 	        Err(e) => eprintln!("{}", e),
 	        _ => println!("No error"),
 	    }
+    }
 
-        // let e = Error {
-        // 	title: "Help, I'm gay!"
-        // 	// reasons: None,
-        // 	// sublties: None,
-        // 	// code: None,
-        // 	// original_error: None,
-        // 	// color_scheme: None
-        // };
+    #[test]
+    fn default() {
+    	fn produce_error() -> Result<(), UserError> {
+			Err(UserError {
+				..Default::default()
+			})
+		}
 
-        // eprintln!("{}", produce_error;
+		match produce_error() {
+	        Err(e) => eprintln!("{}", e),
+	        _ => println!("No error"),
+	    }
     }
 }
