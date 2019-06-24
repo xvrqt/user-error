@@ -129,9 +129,6 @@ impl UserError {
 
 	/// Returns a formatted, possibly colored String listing the reasons for the error. If the terminal supports color, the bullet point ('-') will be colored yellow. Each String in the Vec<String> will be printed on its own line.
 	/// Format: - <reason>
-	/// Example Output:
-	/// - Database could not be parsed
-	/// - File "main.db" not found
 	///
 	/// # Example
 	/// ```
@@ -158,6 +155,70 @@ impl UserError {
 				b
 			},
 			None => String::from("")
+		}
+	}
+
+	/// Modifies the UserError by adding in additional reasons. Useful if you're passing this error up the call stack while cleaning up and want each calling function to be able to annotate what went wrong before displaying to the user.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	/// // An untested function that may fail to process a number
+    ///	fn unstable_function(n: isize) -> Result<(), &'static str> {
+    ///		if n >= 0 { Ok(()) }
+    ///     else { Err("Negative numbers cannot be processed!") }
+    ///	}
+    ///
+    ///	// Processes a vec of numbers. Reports errors but doesn't halt the processing upon encountering one.
+    ///	fn process_numbers(numbers: Vec<isize>) -> Result<(), UserError> {
+    ///		let mut bad_nums = Vec::new();
+    ///		
+    ///		// Process a list of numbers
+    ///		for (i, n) in numbers.iter().enumerate() {
+    ///			match unstable_function(*n) {
+    ///				Err(_) => { bad_nums.push((i, n)); },
+    ///				Ok(_) => ()
+    ///			}
+    ///		}
+    ///
+    ///		// Check if any of the numbers failed to process
+    ///		match  bad_nums.len() {
+    ///			0 => Ok(()),
+    ///			_ => {
+    ///				// Return an error that tells the user which inputs failed
+    ///				let summary = format!("Failed to process {} inputs", bad_nums.len());
+    ///				let mut e = UserError::simple(&summary);
+    ///				for (i, n) in bad_nums {
+	///					let reason = format!("Failed input #{} with value ({})", i, n);
+    ///					e.add_reason(&reason);
+    ///				}
+    ///				Err(e)
+    ///			}
+    ///		}
+    ///	}
+    ///
+    ///	// Process the numbers
+    ///	let numbers = vec![0, 1, 2, -2, 50, -1, -100, 22, 2, 2];
+	///	match process_numbers(numbers) {
+	///     Err(e) => eprintln!("{}", e),
+	///     _ => println!("List processed successfully!"),
+	/// }
+	/// ```
+	/// This results in the following being printed to stderr:
+	/// ```bash
+	/// Error: Failed to process 3 inputs
+    /// - Failed input #3 with value (-2)
+    /// - Failed input #5 with value (-1)
+    /// - Failed input #6 with value (-100)
+    /// ```
+	pub fn add_reason(&mut self, reason: &str) {
+		let reason = String::from(reason);
+		match &mut self.reasons {
+			Some(v) => { v.push(reason); },
+			None => {
+				let v = vec![reason];
+				self.reasons = Some(v);
+			}
 		}
 	}
 
@@ -234,14 +295,55 @@ mod tests {
 		Err(ue)
 	}
 
-  //   #[test]
-  //   fn test() {
-		// let ue = UserError::new("Failed to build project", &["I'm gay", "I'm a girl"], &["fuck u", "and u"]);
-		// match produce_error(ue) {
-	 //        Err(e) => eprintln!("{}", e),
-	 //        _ => println!("No error"),
-	 //    }
-  //   }
+    #[test]
+    fn test() {
+
+    	// An untested function that may fail to process a number
+    	fn unstable_function(n: isize) -> Result<(), &'static str> {
+    		if n >= 0 {
+    			Ok(())
+    		} else {
+    			Err("Negative numbers cannot be processed!")
+    		}
+    	}
+
+    	// Processes a list of numbers. Reports errors but doesn't halt the processing upon encountering one.
+    	fn process_numbers(numbers: Vec<isize>) -> Result<(), UserError> {
+    		let mut bad_nums = Vec::new();
+    		
+    		// Process a list of numbers
+    		for (i, n) in numbers.iter().enumerate() {
+    			match unstable_function(*n) {
+    				Err(_) => {
+    					bad_nums.push((i, n));
+    				},
+    				Ok(_) => ()
+    			}
+    		}
+
+    		// Check if any of the numbers failed to process
+    		match  bad_nums.len() {
+    			0 => Ok(()),
+    			_ => {
+    				// Return an error that tells the user which inputs failed
+    				let summary = format!("Failed to process {} inputs", bad_nums.len());
+    				let mut e = UserError::simple(&summary);
+    				for (i, n) in bad_nums {
+						let reason = format!("Failed input #{} with value ({})", i, n);
+    					e.add_reason(&reason);
+    				}
+    				Err(e)
+    			}
+    		}
+    	}
+
+    	// Process the numbers 
+    	let numbers = vec![0, 1, 2, -2, 50, -1, -100, 22, 2, 2];
+		match process_numbers(numbers) {
+	        Err(e) => eprintln!("{}", e),
+	        _ => println!("List processed successfully!"),
+	    }
+    }
 
  //    #[test]
  //    fn default() {
