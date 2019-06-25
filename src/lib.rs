@@ -550,7 +550,7 @@ mod tests {
                                 &[  "Database could not be parsed", 
                                     "File \"main.db\" not found"], 
                                 &[  "Try: touch main.db", 
-                                    "This command will create and empty database file the program can use"]);
+                                    "This command will create an empty database file the program can use"]);
 		eprintln!("{}", e);
 	}
 }

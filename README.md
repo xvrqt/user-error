@@ -15,7 +15,7 @@ The docs are _really_ good for this crate. In addition to reading this README yo
 
 # Quickstart
 Add the following to your Cargo.toml:
-```TOML
+```yaml
 [dependencies]
 user-error = "0.2.0"
 ```
@@ -42,7 +42,7 @@ Try: touch main.db
 This command will create and empty database file the program can use 
 ```
 If the user has colors enabled on their terminal, it may look something like this:
-![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/Screen%20Shot%202019-06-24%20at%2018.24.50.png)
+![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/user-error-output.png)
 
 # Examples
 
@@ -88,7 +88,7 @@ Try: touch main.db
 This command will create and empty database file the program can use 
 ```
 If the user has colors enabled on their terminal, it may look something like this:
-![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/Screen%20Shot%202019-06-24%20at%2018.24.50.png)
+![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/user-error-output.png)
 
 ### Dynamic Error
 Creates an error using heap allocated structures.
