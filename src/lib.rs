@@ -542,5 +542,15 @@ impl From<&str> for UserError {
 
 #[cfg(test)]
 mod tests {
+	use super::*;
 	// Testing is done via document examples and would be redundant here
+	#[test]
+	fn example() {
+		let e = UserError::hardcoded("Failed to build project", 
+                                &[  "Database could not be parsed", 
+                                    "File \"main.db\" not found"], 
+                                &[  "Try: touch main.db", 
+                                    "This command will create and empty database file the program can use"]);
+		eprintln!("{}", e);
+	}
 }
