@@ -34,10 +34,10 @@ fn main() {
 }
 ```
 This prints:
-```bash
+```text
 Error: Failed to build project
 - Database could not be parsed
-- File \"main.db\" not found
+- File "main.db" not found
 Try: touch main.db
 This command will create and empty database file the program can use 
 ```
@@ -61,7 +61,7 @@ fn main() {
 ```
 
 This prints:
-```bash
+```text
 Error: Failed to build project
 ```
 
@@ -80,15 +80,13 @@ fn main() {
 }
 ```
 This prints:
-```bash
+```text
 Error: Failed to build project
 - Database could not be parsed
-- File \"main.db\" not found
+- File "main.db" not found
 Try: touch main.db
 This command will create and empty database file the program can use 
 ```
-If the user has colors enabled on their terminal, it may look something like this:
-![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/user-error-output.png)
 
 ### Dynamic Error
 Creates an error using heap allocated structures.
@@ -106,10 +104,10 @@ fn main() {
 }
 ```
 This prints:
-```bash
+```text
 Error: Failed to build project
 - Database could not be parsed
-- File \"main.db\" not found
+- File "main.db" not found
 Try: touch main.db
 This command will create and empty database file the program can use 
 ```
@@ -135,7 +133,7 @@ fn main() {
 }
 ```
 This prints:
-```bash
+```text
 Error: No such file or directory (os error 2)
 ```
 
@@ -153,7 +151,7 @@ fn main() {
 }
 ```
 This prints:
-```bash
+```text
 Error: Critical Failure!
 ```
 
@@ -169,7 +167,7 @@ fn main() {
 }
 ```
 This prints:
-```bash
+```text
 Error: Critical Failure!
 ```
 
