@@ -7,7 +7,6 @@
         unused_import_braces, unused_qualifications)]
 
 // Standard Library Dependencies
-use std::io;
 use std::fmt;
 use std::path::Path;
 use std::error::Error;
@@ -26,8 +25,8 @@ fn default_summary() -> String {
 	// Pull the name from the first command line argument
 	let name = String::from(std::env::args().next().as_ref()
 				.map(|s| Path::new(s))
-				.and_then(|p| p.file_stem())
-				.and_then(|s| s.to_str())
+				.and_then(std::path::Path::file_stem)
+				.and_then(std::ffi::OsStr::to_str)
 				.unwrap_or("The application"));
 	format!("{} encountered an unknown error.", name)
 }
@@ -84,8 +83,8 @@ impl UserError {
 	///									"This command will create and empty database file the program can use "]);
 	/// ```
 	pub fn hardcoded(summary: &str, reasons: &[&str], subtleties: &[&str]) -> UserError {
-		let reasons = reasons.into_iter().map(|s| String::from(*s)).collect();
-		let subtleties = subtleties.into_iter().map(|s| String::from(*s)).collect();
+		let reasons = reasons.iter().map(|s| String::from(*s)).collect();
+		let subtleties = subtleties.iter().map(|s| String::from(*s)).collect();
 		UserError {
 			summary: String::from(summary),
 			reasons: Some(reasons),
@@ -543,6 +542,5 @@ impl From<&str> for UserError {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	// Testing is done via document examples and would be redundant here
 }

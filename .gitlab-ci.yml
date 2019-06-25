@@ -1,0 +1,34 @@
+stages:
+    - build
+    - test
+    - deploy
+
+image: rust:latest
+
+build:
+  stage: build
+  tags:
+    - docker
+  script:
+    - cargo build --release
+      
+test:
+  stage: test
+  tags:
+    - docker
+  before_script:
+    - rustup component add clippy
+  script:
+    - cargo clippy
+    - cargo test
+
+deploy:
+  stage: deploy
+  tags:
+    - docker
+  script:
+    - cargo login $CRATES_KEY
+    - cargo publish
+  when: manual
+  only:
+    - tags

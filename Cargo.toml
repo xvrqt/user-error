@@ -1,8 +1,15 @@
 [package]
 name = "user-error"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Amy <git@xvrqt.com>"]
 edition = "2018"
+repository = "https://git.xvrqt.com/amy/user-error.git"
+homepage = "https://git.xvrqt.com/amy/user-error"
+license = "BSD-3-Clause"
+readme = "README.md"
+description = "Simple error type that display in a clear and beautiful manner to the user of a CLI application."
+keywords = ["errors", "pretty print", "struct", "xvrqt"]
+categories = ["data-structures", "command-line-interface"]
 
 [dependencies]
 colorful = "0.2.1"
