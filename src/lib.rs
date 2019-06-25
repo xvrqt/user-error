@@ -7,6 +7,7 @@
         unused_import_braces, unused_qualifications)]
 
 // Standard Library Dependencies
+use std::io;
 use std::fmt;
 use std::path::Path;
 use std::error::Error;
@@ -14,12 +15,6 @@ use std::error::Error;
 // Third Party Dependencies
 use colorful::Color;
 use colorful::Colorful;
-
-// Clone
-// Eq/PartialEq
-// Addition
-// std::convert::From (static str errors and string errors)
-// Clear reasons/subtleties
 
 /********************
  * Helper Functions *
@@ -44,6 +39,9 @@ pub struct UserError {
 	summary:    String,
 	reasons:    Option<Vec<String>>,
 	subtleties: Option<Vec<String>>,
+
+	/// Original Error (if any) used when converted from another error type
+	original_error: Option<Box<Error>>,
 }
 
 impl UserError {
@@ -53,6 +51,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	/// let error_summary    = String::from("Failed to build project");
 	/// let error_reasons    = vec![String::from("Database could not be parsed"), 
 	///								String::from("File \"main.db\" not found")];
@@ -68,6 +67,7 @@ impl UserError {
 			summary,
 			reasons: Some(reasons),
 			subtleties: Some(subtleties),
+			original_error: None
 		}
 	}
 
@@ -76,6 +76,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	/// let e = UserError::hardcoded("Failed to build project", 
 	///								&[	"Database could not be parsed", 
 	///									"File \"main.db\" not found"], 
@@ -89,6 +90,7 @@ impl UserError {
 			summary: String::from(summary),
 			reasons: Some(reasons),
 			subtleties: Some(subtleties),
+			original_error: None,
 		}
 	}
 
@@ -97,6 +99,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	/// let e = UserError::simple("Failed to build project");
 	/// ```
 	pub fn simple(summary: &str) -> UserError {
@@ -104,7 +107,44 @@ impl UserError {
 			summary: String::from(summary),
 			reasons: None,
 			subtleties: None,
+			original_error: None,
 		}
+	}
+
+	/// Prints the error to stderr
+	///
+	/// # Exapmle
+	/// ```
+	/// use user_error::UserError;
+	///
+	/// let e = UserError::simple("Failed to build project");
+	/// e.print();
+	/// ```
+	/// This results in the following being printed to stderr:
+	/// ```bash
+	/// Error: Failed to build project
+	/// ```
+	pub fn print(&self) {
+		eprintln!("{}", self);
+	}
+
+	/// Prints the error to stderr and terminates the process with exit code 1
+	///
+	/// # Exapmle
+	/// ```should_panic
+	/// use user_error::UserError;
+	///
+	/// let e = UserError::simple("Failed to build project");
+	/// e.print_and_exit(); // Program exits here
+	/// eprintln!("I will not be printed!");
+	/// ```
+	/// This results in the following being printed to stderr:
+	/// ```bash
+	/// Error: Failed to build project
+	/// ```
+	pub fn print_and_exit(&self) {
+		self.print();
+		std::process::exit(1);
 	}
 
 	/// Returns a formatted, possibly colored String listing the error summary, prepended by an error header ("Error: "). If the terminal supports color, the error header will be printed boldly in white upon a red background; the error summary will be printed boldly in red upon a black background. If no error summary is provided the default is: <application name> encountered an unknown error.
@@ -116,6 +156,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	/// let e = UserError::hardcoded("Failed to build project", 
 	///								&[	"Database could not be parsed", 
 	///									"File \"main.db\" not found"], 
@@ -136,6 +177,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	/// let e = UserError::hardcoded("Failed to build project", 
 	///								&[	"Database could not be parsed", 
 	///									"File \"main.db\" not found"], 
@@ -166,6 +208,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	/// // An untested function that may fail to process a number
     ///	fn unstable_function(n: isize) -> Result<(), &'static str> {
     ///		if n >= 0 { Ok(()) }
@@ -229,6 +272,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	///	let mut e = UserError::hardcoded("Failed to build project",
     ///									&["Reason #1",
     ///									  "Reason #2",
@@ -252,6 +296,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	/// let e = UserError::hardcoded("Failed to build project", 
 	///								&[	"Database could not be parsed", 
 	///									"File \"main.db\" not found"], 
@@ -284,6 +329,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	///	// A mock system call to open a file
     ///	fn open_file(path: &str) -> Result<(), String> {
     ///		Err(format!("Failed to open file: {}", path))
@@ -339,6 +385,7 @@ impl UserError {
 	/// # Example
 	/// ```
 	/// use user_error::UserError;
+	///
 	///	let mut e = UserError::hardcoded("Failed to build project",
 	///									&["Reasons!"],
     ///									&["Tip #1",
@@ -356,8 +403,11 @@ impl UserError {
 		self.subtleties = None;
 	}
 }
+/**********
+ * TRAITS *
+ **********/
 
-/// Required to implement the Error trait
+/// Display and Debug are required to satisfy the Error trait. Debug has been derived for UserError.
 impl fmt::Display for UserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     	let mut summary = self.summary();
@@ -377,65 +427,122 @@ impl fmt::Display for UserError {
     }
 }
 
-/// Default implementation for UserError attempts to print: <application name> has encountered an unknown error.
+/// Default implementation for UserError prints: <application name> has encountered an unknown error.
 impl Default for UserError {
 	fn default() -> Self {
 		UserError {
 			summary: default_summary(),
 			reasons: None,
-			subtleties: None
+			subtleties: None,
+			original_error: None,
 		}
 	}
+}
+
+/// Convert a std::io::Error into a UserError
+///
+/// # Example
+/// ```
+/// use user_error::UserError;
+///
+/// use std::fs::File;
+///	fn open_file(path: &str) -> Result<File, UserError> {
+///		let f = File::open(path)?;
+///		Ok(f)
+///	}
+///
+///	match open_file("does_not_exist.txt") {
+///		Err(e) => eprintln!("{}", e),
+///		Ok(_) => ()
+///	}
+/// ```
+/// This results in the following being printed to stderr:
+/// ```bash
+/// Error: No such file or directory (os error 2)
+/// ```
+impl From<std::io::Error> for UserError {
+    fn from(error: std::io::Error) -> Self {
+        UserError {
+        	summary: error.to_string(),
+        	reasons: None,
+        	subtleties: None,
+        	original_error: Some(Box::new(error)),
+        }
+    }
+}
+
+/// Convert an Err(String) into a UserError
+///
+/// # Example
+/// ```
+/// use user_error::UserError;
+///
+/// fn string_error(e: &str) -> Result<(), String> {
+///		Err(String::from(e))
+///	}
+///
+///	fn caller() -> Result<(), UserError> {
+///		string_error("broken")?;
+///		Ok(())
+///	}
+///
+///	match caller() {
+///		Err(e) => eprintln!("{}", e),
+///		Ok(_) => ()
+///	}
+/// ```
+/// This results in the following being printed to stderr:
+/// ```bash
+/// Error: broken
+/// ```
+impl From<String> for UserError {
+    fn from(error: String) -> Self {
+        UserError {
+        	summary: error,
+        	reasons: None,
+        	subtleties: None,
+        	original_error: None,
+        }
+    }
+}
+
+/// Convert an Err(&'static str) into a UserError
+///
+/// # Example
+/// ```
+/// use user_error::UserError;
+///
+/// fn str_error(path: &str) -> Result<(), &'static str> {
+///		Err("Failed!")
+///	}
+///
+///	fn caller() -> Result<(), UserError> {
+///		str_error("does_not_exist.txt")?;
+///		Ok(())
+///	}
+///
+///	match caller() {
+///		Err(e) => eprintln!("{}", e),
+///		Ok(_) => ()
+///	}
+/// ```
+/// This results in the following being printed to stderr:
+/// ```bash
+/// Error: Failed!
+/// ```
+impl From<&str> for UserError {
+    fn from(error: &str) -> Self {
+        UserError {
+        	summary: String::from(error),
+        	reasons: None,
+        	subtleties: None,
+        	original_error: None,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
-
-	fn produce_error(ue: UserError) -> Result<(), UserError> {
-		Err(ue)
-	}
-
-    #[test]
-    fn test() {
-
-    	let mut e = UserError::hardcoded("Failed to build project",
-										&["Reasons!"],
-    									&["Tip #1",
-    									  "Tip #2",
-    									  "Tip #3"]);
-    	e.clear_subtleties();
-    	eprintln!("{}", e);
-    	// // A mock system call to open a file
-    	// fn open_file(path: &str) -> Result<(), String> {
-    	// 		Err(format!("Failed to open file: {}", path))
-    	// }
-
-    	// // A mock system call to check if path requires root permissions
-    	// fn needs_root(path: &str) -> bool {
-    	// 	true
-    	// }
-
-    	// Builds an unspecified project
-  //   	fn build_project(path: &str) -> Result<(), UserError> {
-
-  //   		match open_file(path) {
-  //   			Ok(_) => Ok(()),
-  //   			Err(e) => {
-  //   				let mut error = UserError::new(String::from("Failed to build project"),
-  //   														vec![e],
-  //   														vec![format!("Try: touch {}", path)]);
-  //   				if needs_root(path) {
-  //   					error.add_subtly("You may need to ask your administrator to run this command for you")
-  //   				}
-  //   				Err(error)
-  //   			}
-  //   		}
-  //   	}
-
-		// match build_project("/user_data.db") {
-	 //        Err(e) => eprintln!("{}", e),
-	 //        _ => println!("Project built successfully!"),
-	 //    }
-    }
+	// Testing is done via document examples and would be redundant here
 }
