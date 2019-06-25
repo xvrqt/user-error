@@ -17,7 +17,7 @@ The docs are _really_ good for this crate. In addition to reading this README yo
 Add the following to your Cargo.toml:
 ```yaml
 [dependencies]
-user-error = "0.2.0"
+user-error = "1.0.0"
 ```
 
 Add the following to your main.rs/lib.rs:
