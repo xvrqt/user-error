@@ -56,6 +56,9 @@ mod tests {
 		}
 		let r = bad_connection();
 		assert!(r.is_err());
-		println!("{}", r.unwrap_err());
+		let mut r = r.unwrap_err();
+		println!("{}", r);
+		r.update_and_push_summary("Failed to create project");
+		println!("----\n{}", r);
 	}
 }
