@@ -152,6 +152,43 @@ impl UserError {
 		self.summary = String::from(s);
 	}
 
+	/// Updates the summary of the UserError and adds the old summary as a reason for the error. Useful for taking UserErrors that were coerced from other Error types, changing the summary but remembering the underlying cause before displaying them to the user.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	///
+	/// use std::path::Path;
+	///	use rusqlite::{Connection, OpenFlags};
+	///
+	///	fn bad_connection() -> Result<Connection, UserError> {
+	///		let c = Connection::open_with_flags(Path::new("nonexistent.db"), OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+	///		Ok(c)    
+	///	}
+	///	let r = bad_connection();
+	///	assert!(r.is_err());
+	/// let mut r = r.unwrap_err();
+	///	eprintln!("{}", r);
+	/// r.update_and_push_summary("Failed to create new project");
+	/// eprintln!("-----\n{}", r);
+	/// ```
+	/// This results in the following being printed to stderr:
+	/// ```text
+	/// Error: SQLite has encountered an issue
+	///	- Underlying SQLite call failed
+	///	- unable to open database file
+	/// -----
+	/// Error: Failed to create new project
+	/// - SQLite has encountered an issue
+	///	- Underlying SQLite call failed
+	///	- unable to open database file
+    /// ```
+	pub fn update_and_push_summary(&mut self, s: &str) {
+		let old_summary = self.summary.clone();
+		self.add_reason(&old_summary);
+		self.summary = String::from(s);
+	}
+
 	/// Returns a formatted, possibly colored String listing the reasons for the error. If the terminal supports color, the bullet point ('-') will be colored yellow. Each String in the Vec<String> will be printed on its own line.
 	/// Format: - <reason>
 	///
