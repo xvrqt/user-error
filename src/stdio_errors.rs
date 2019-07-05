@@ -28,7 +28,7 @@ impl From<std::io::Error> for UserError {
         	summary: error.to_string(),
         	reasons: None,
         	subtleties: None,
-        	original_error: Some(Box::new(error)),
+        	original_errors: Some(vec![Box::new(error)]),
         }
     }
 }

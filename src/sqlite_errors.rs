@@ -32,7 +32,7 @@ impl From<SQLError> for UserError {
                     summary,
                     reasons: Some(reasons),
                     subtleties: None,
-                    original_error: Some(Box::new(e)),
+                    original_errors: Some(vec![Box::new(e)]),
                 }
             },
             SQLError::SqliteSingleThreadedMode => {
@@ -40,7 +40,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![String::from("Attempted to open an additional connection when SQLite was configured to allow single-threaded use only")]),
                     subtleties: None,
-                    original_error: None 
+                    original_errors: None 
                 }
             },
             SQLError::FromSqlConversionFailure(c, t, e) => {
@@ -48,7 +48,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![format!("Failed to convert value of column {} to Rust type {}", c, t)]),
                     subtleties: None,
-                    original_error: Some(e) 
+                    original_errors: Some(vec![e]) 
                 }
             },
             SQLError::IntegralValueOutOfRange(c, n) => {
@@ -56,7 +56,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![format!("Cannot fit integral value '{}' from column {} into requested type without overflow", n, c)]),
                     subtleties: Some(vec![String::from("e.g., trying to get the value 1000 into a u8")]),
-                    original_error: None 
+                    original_errors: None 
                 }
             },
             SQLError::Utf8Error(e) => {
@@ -64,7 +64,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![String::from("Failed to convert string value to UTF-8")]),
                     subtleties: None,
-                    original_error: Some(Box::new(e)) 
+                    original_errors: Some(vec![Box::new(e)])
                 }
             },
             SQLError::NulError(e) => {
@@ -78,7 +78,7 @@ impl From<SQLError> for UserError {
                     reasons: Some(vec![format!("Failed to convert {} to a C-Compatible String", bad_string), 
                                        format!("{} contains a nul byte at position: {}", bad_string, e.nul_position())]),
                     subtleties: Some(vec![String::from("While strings may contain nul bytes in the middle, C strings can't, as that byte would effectively truncate the string.")]),
-                    original_error: Some(Box::new(e)) 
+                    original_errors: Some(vec![Box::new(e)]) 
                 }
             },
             SQLError::InvalidParameterName(s) => {
@@ -87,7 +87,7 @@ impl From<SQLError> for UserError {
                     reasons: Some(vec![String::from("Invalid parameter name"),
                                        format!("Parameter: {} not present in the SQL", s)]),
                     subtleties: None,
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::InvalidPath(_p) => {
@@ -95,7 +95,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![String::from("Invalid path")]),
                     subtleties: Some(vec![String::from("Could not convert the file path to a string.")]),
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::ExecuteReturnedResults => {
@@ -103,7 +103,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![String::from("Execute call returned rows")]),
                     subtleties: None,
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::QueryReturnedNoRows => {
@@ -111,7 +111,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![String::from("Query returned no rows")]),
                     subtleties: Some(vec![String::from("Query was expected to return at least one row (e.g., for query_row) but did not return any.")]),
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::InvalidColumnIndex(c) => {
@@ -119,7 +119,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![format!("Column index: {} is out of range for a statement", c)]),
                     subtleties: None,
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::InvalidColumnName(s) => {
@@ -127,7 +127,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![format!("No column matching '{}' in statement", s)]),
                     subtleties: None,
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::InvalidColumnType(c, _s, t) => {
@@ -135,7 +135,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![format!("Failed to convert value of column {} to Rust type {}", c, t)]),
                     subtleties: None,
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::StatementChangedRows(_c) => {
@@ -143,7 +143,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![String::from("Statement failed to insert row(s)")]),
                     subtleties: None,
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::InvalidQuery => {
@@ -151,7 +151,7 @@ impl From<SQLError> for UserError {
                     summary, 
                     reasons: Some(vec![String::from("Invalid query")]),
                     subtleties: None,
-                    original_error: None
+                    original_errors: None
                 }
             },
             SQLError::ToSqlConversionFailure(e) => {
@@ -159,7 +159,7 @@ impl From<SQLError> for UserError {
                     summary,
                     reasons: Some(vec![String::from("Failed to convert to SQL")]),
                     subtleties: None,
-                    original_error: Some(e)
+                    original_errors: Some(vec![e])
                 }
             }
         }

@@ -37,7 +37,7 @@ impl Default for UserError {
 			summary: helper::default_summary(),
 			reasons: None,
 			subtleties: None,
-			original_error: None,
+			original_errors: None,
 		}
 	}
 }
