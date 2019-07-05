@@ -13,3 +13,5 @@ categories = ["data-structures", "command-line-interface"]
 
 [dependencies]
 colorful = "0.2.1"
+rusqlite = "0.19.0"
+
