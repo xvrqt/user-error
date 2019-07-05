@@ -24,7 +24,7 @@ pub struct UserError {
 	subtleties: Option<Vec<String>>,
 
 	/// Original Error (if any) used when converted from another error type
-	original_error: Option<Box<Error>>,
+	original_errors: Option<Vec<Box<Error>>>,
 }
 
 /* Test that you can construct an error. Additional test are in the
@@ -59,6 +59,7 @@ mod tests {
 		let mut r = r.unwrap_err();
 		println!("{}", r);
 		r.update_and_push_summary("Failed to create project");
-		println!("----\n{}", r);
+		println!("----\n{}\n-----", r);
+		r.print_other_errors();
 	}
 }

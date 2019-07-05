@@ -34,7 +34,7 @@ impl UserError {
 			summary,
 			reasons: Some(reasons),
 			subtleties: Some(subtleties),
-			original_error: None
+			original_errors: None
 		}
 	}
 
@@ -57,7 +57,7 @@ impl UserError {
 			summary: String::from(summary),
 			reasons: Some(reasons),
 			subtleties: Some(subtleties),
-			original_error: None,
+			original_errors: None,
 		}
 	}
 
@@ -74,7 +74,7 @@ impl UserError {
 			summary: String::from(summary),
 			reasons: None,
 			subtleties: None,
-			original_error: None,
+			original_errors: None,
 		}
 	}
 
@@ -419,5 +419,40 @@ impl UserError {
     /// ```
 	pub fn clear_subtleties(&mut self) {
 		self.subtleties = None;
+	}
+
+	/// Prints all the other errors (if present) to stderr. Does nothing if there are no other errors.
+	///
+	/// # Example
+	/// ```
+	/// use user_error::UserError;
+	///
+	/// use std::path::Path;
+	///	use rusqlite::{Connection, OpenFlags};
+	///
+	///	fn bad_connection() -> Result<Connection, UserError> {
+	///		let c = Connection::open_with_flags(Path::new("nonexistent.db"), OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+	///		Ok(c)    
+	///	}
+	///	let r = bad_connection();
+	///	assert!(r.is_err());
+	/// let r = r.unwrap_err();
+	/// eprintln!("{}\n-----", r);
+	///	r.print_other_errors();
+	/// ```
+	/// This results in the following being printed to stderr:
+	/// ```text
+	/// Error: SQLite has encountered an issue
+	///	- Underlying SQLite call failed
+	///	- unable to open database file
+	/// -----
+	/// Error code 14: Unable to open the database file
+    /// ```
+	pub fn print_other_errors(& self) {
+		if let Some(v) = &self.original_errors {
+			for e in v {
+				eprintln!("{}", e);
+			}
+		}
 	}
 }

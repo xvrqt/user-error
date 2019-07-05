@@ -34,7 +34,7 @@ impl From<String> for UserError {
         	summary: error,
         	reasons: None,
         	subtleties: None,
-        	original_error: None,
+        	original_errors: None,
         }
     }
 }
@@ -69,7 +69,7 @@ impl From<&str> for UserError {
         	summary: String::from(error),
         	reasons: None,
         	subtleties: None,
-        	original_error: None,
+        	original_errors: None,
         }
     }
 }
