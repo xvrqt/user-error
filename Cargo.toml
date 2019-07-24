@@ -1,6 +1,6 @@
 [package]
 name = "user-error"
-version = "1.0.3"
+version = "1.0.4"
 authors = ["Amy <git@xvrqt.com>"]
 edition = "2018"
 repository = "https://git.xvrqt.com/amy/user-error.git"
@@ -12,7 +12,7 @@ keywords = ["errors", "pretty-print", "struct", "xvrqt"]
 categories = ["data-structures", "command-line-interface"]
 
 [dependencies]
-scrawl   = "^0.1.1"
+scrawl   = "^0.1.2"
 colorful = "^0.2.1"
 rusqlite = "^0.19.0"
 

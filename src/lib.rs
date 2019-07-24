@@ -13,6 +13,7 @@ mod traits;
 mod helper;
 mod stdio_errors;
 mod sqlite_errors;
+mod scrawl_errors;
 mod string_errors;
 mod implementation;
 

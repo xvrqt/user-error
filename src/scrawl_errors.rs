@@ -1,7 +1,7 @@
 /* Allows for coercion of rusqlite::Error into UserError */
 
 // Third Party Dependencies
-use scrawl::ScrawlError;
+use scrawl::error::ScrawlError as ScrawlError;
 
 // Intra Library Imports
 use super::UserError;
@@ -11,9 +11,13 @@ use super::UserError;
 /// # Example
 /// ```should_panic
 /// use scrawl;
-/// 
+/// use user_error::UserError;
+/// use std::path::Path;
+///
 /// fn bad_scrawl() -> Result<String, UserError> {
-///     scrawl::open("does_not_exist.txt")
+///     let file = Path::new("does_not_exist.txt");
+///     let output = scrawl::open(file)?;
+///     Ok(output)
 /// }
 ///
 /// match bad_scrawl() {
@@ -25,7 +29,7 @@ use super::UserError;
 impl From<ScrawlError> for UserError {
     fn from(error: ScrawlError) -> Self {
         const SUMMARY: &str = "Scrawl Error";
-        match self {
+        match error {
             ScrawlError::EditorNotFound => UserError::hardcoded(SUMMARY,
                     &["Could not determine the user's preferred editor"],
                     &["Make sure your $EDITOR environment variable is set."]),
@@ -35,7 +39,7 @@ impl From<ScrawlError> for UserError {
                     &[]),
 
             ScrawlError::FailedToOpenEditor(editor) => UserError::hardcoded(SUMMARY,
-                    &[&format!("Could not open {} as a text editor", editor),
+                    &[&format!("Could not open {} as a text editor", editor)],
                     &[]),
 
             ScrawlError::FailedToReadIntoString => UserError::hardcoded(SUMMARY,
@@ -47,7 +51,8 @@ impl From<ScrawlError> for UserError {
                 &["Make sure the file exists."]),
 
 
-            ScrawlError::Other(string) => UserError::simple(string)
+            ScrawlError::Other(string) => UserError::simple(&string)
         }
     }
 }
+
