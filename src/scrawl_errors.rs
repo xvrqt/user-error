@@ -30,10 +30,6 @@ impl From<ScrawlError> for UserError {
     fn from(error: ScrawlError) -> Self {
         const SUMMARY: &str = "Scrawl Error";
         match error {
-            ScrawlError::EditorNotFound => UserError::hardcoded(SUMMARY,
-                    &["Could not determine the user's preferred editor"],
-                    &["Make sure your $EDITOR environment variable is set."]),
-
             ScrawlError::FailedToCreateTempfile => UserError::hardcoded(SUMMARY,
                     &["Could not create a temporary file to use as a buffer"],
                     &[]),
@@ -42,16 +38,13 @@ impl From<ScrawlError> for UserError {
                     &[&format!("Could not open {} as a text editor", editor)],
                     &[]),
 
-            ScrawlError::FailedToReadIntoString => UserError::hardcoded(SUMMARY,
-                    &["Failed to parse file into valid UTF-8 String."],
+            ScrawlError::FailedToCaptureInput=> UserError::hardcoded(SUMMARY,
+                    &["Failed to capture user input."],
                     &[]),
 
             ScrawlError::FailedToCopyToTempFile(filename) => UserError::hardcoded(SUMMARY,
                 &[&format!("Failed to copy the contents of the `{}` to the temporary buffer for editing.", filename)],
-                &["Make sure the file exists."]),
-
-
-            ScrawlError::Other(string) => UserError::simple(&string)
+                &["Make sure the file exists."])
         }
     }
 }
