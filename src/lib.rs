@@ -70,7 +70,7 @@ impl UserFacingError<Start> {
 
     /// Prints the error and then exits the program
     /// # Example
-    /// ```
+    /// ```should_panic
     /// use user_error::UserFacingError;
     ///
     /// let err = UserFacingError::new("File failed to open");
@@ -152,7 +152,7 @@ impl UserFacingError<HelpText> {
     /// ```
     /// use user_error::UserFacingError;
     ///
-    /// let err = UserFacingError::new("File failed to open");
+    /// let err = UserFacingError::new("File failed to open")
     ///                             .helptext("Check that it exists");
     /// err.print();
     /// ```
@@ -162,7 +162,7 @@ impl UserFacingError<HelpText> {
 
     /// Prints the error and then exits the program
     /// # Example
-    /// ```
+    /// ```should_panic
     /// use user_error::UserFacingError;
     ///
     /// let err = UserFacingError::new("File failed to open")
@@ -229,7 +229,7 @@ impl UserFacingError<Reason> {
     /// ```
     /// use user_error::UserFacingError;
     ///
-    /// let err = UserFacingError::new("File failed to open");
+    /// let err = UserFacingError::new("File failed to open")
     ///                             .reason("File not found");
     /// err.print();
     /// ```
@@ -239,7 +239,7 @@ impl UserFacingError<Reason> {
 
     /// Prints the error and then exits the program
     /// # Example
-    /// ```
+    /// ```should_panic
     /// use user_error::UserFacingError;
     ///
     /// let err = UserFacingError::new("File failed to open")
@@ -346,7 +346,7 @@ impl UserFacingError<ReasonsAndHelp> {
 
     /// Prints the error and then exits the program
     /// # Example
-    /// ```
+    /// ```should_panic
     /// use user_error::UserFacingError;
     ///
     /// let err = UserFacingError::new("File failed to open")
@@ -377,9 +377,6 @@ impl Error for UserFacingError<ReasonsAndHelp> {
     }
 }
 
-/* Test that you can construct an error. Additional test are in the
- * tests/ folder and in the documentation of the other files.
-*/
 #[cfg(test)]
 mod tests {
     use super::*;
