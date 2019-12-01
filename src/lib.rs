@@ -16,6 +16,7 @@
 use std::error::Error;
 use std::fmt;
 
+
 /// Marker trait to ensure valid state transitions.
 pub trait UFEState {}
 
@@ -53,6 +54,30 @@ impl UserFacingError<Start> {
             summary: s.into(),
             state: Start,
         }
+    }
+
+    /// Prints the error
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open");
+    /// err.print();
+    /// ```
+    pub fn print(&self) {
+        eprintln!("{}", self);
+    }
+
+    /// Prints the error and then exits the program
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open");
+    /// err.print_and_exit();
+    pub fn print_and_exit(&self) -> ! {
+        eprintln!("{}", self);
+        std::process::exit(1)
     }
 
     /// Add a reason to the UserFacingError. Reasons are displayed in a bulleted list below the summary.
@@ -121,6 +146,34 @@ pub struct HelpText {
 }
 impl UFEState for HelpText {}
 
+impl UserFacingError<HelpText> {
+    /// Prints the error
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open");
+    ///                             .helptext("Check that it exists");
+    /// err.print();
+    /// ```
+    pub fn print(&self) {
+        eprintln!("{}", self);
+    }
+
+    /// Prints the error and then exits the program
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .helptext("Check that it exists");
+    /// err.print_and_exit();
+    pub fn print_and_exit(&self) -> ! {
+        eprintln!("{}", self);
+        std::process::exit(1)
+    }
+}
+
 impl fmt::Display for UserFacingError<HelpText> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -169,6 +222,32 @@ impl UserFacingError<Reason> {
             summary: error.to_string(),
             state: Reason { reasons },
         }
+    }
+
+    /// Prints the error
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open");
+    ///                             .reason("File not found");
+    /// err.print();
+    /// ```
+    pub fn print(&self) {
+        eprintln!("{}", self);
+    }
+
+    /// Prints the error and then exits the program
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .reason("File not found");
+    /// err.print_and_exit();
+    pub fn print_and_exit(&self) -> ! {
+        eprintln!("{}", self);
+        std::process::exit(1)
     }
 
     /// Add a reason to the UserFacingError. Reasons are displayed in a bulleted list below the summary.
@@ -249,6 +328,36 @@ pub struct ReasonsAndHelp {
     help_text: String,
 }
 impl UFEState for ReasonsAndHelp {}
+
+impl UserFacingError<ReasonsAndHelp> {
+    /// Prints the error
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .reason("File not found")
+    ///                             .helptext("Make sure the file exists");
+    /// err.print();
+    /// ```
+    pub fn print(&self) {
+        eprintln!("{}", self);
+    }
+
+    /// Prints the error and then exits the program
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .reason("File not found")
+    ///                             .helptext("Make sure the file exists");
+    /// err.print_and_exit();
+    pub fn print_and_exit(&self) -> ! {
+        eprintln!("{}", self);
+        std::process::exit(1)
+    }
+}
 
 impl fmt::Display for UserFacingError<ReasonsAndHelp> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
