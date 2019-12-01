@@ -1,32 +1,271 @@
-//! # User Error
-//! A library for conveniently displaying well-formatted, and good looking errors to users of CLI applications. Useful for bubbling up unrecoverable errors to inform the user what they can do to fix them.
-#![deny(missing_docs,
-        missing_debug_implementations, missing_copy_implementations,
-        trivial_casts, trivial_numeric_casts,
-        unstable_features, unsafe_code,
-        unused_import_braces, unused_qualifications)]
+//! # User Facing Error
+//! A library for conveniently displaying well-formatted, and good looking errors to users of CLI applications. Useful for bubbling up unrecoverable errors to inform the user what they can do to fix them. Error messages you'd be proud to show your mom.
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unstable_features,
+    unsafe_code,
+    unused_import_braces,
+    unused_qualifications
+)]
 
-// Standard Library Dependencies
+/* Standard Library Dependencies */
 use std::error::Error;
+use std::fmt;
 
-mod traits;
-mod helper;
-mod stdio_errors;
-mod sqlite_errors;
-mod scrawl_errors;
-mod string_errors;
-mod implementation;
+/// Marker trait to ensure valid state transitions.
+pub trait UFEState {}
 
 /// The eponymous struct.
+/// # Example
+/// ```
+/// use user_error::UserFacingError;
+///
+/// let err = UserFacingError::new("File failed to open")
+///                             .reason("File not found")
+///                             .helptext("Make sure foo.txt exists");
+/// ```
 #[derive(Debug)]
-pub struct UserError {
-	/// These fields are used to print the error. Title should be a summary of the error (e.g. "Failed to process files"). Reasons should be a list of reasons for the summary (e.g. "Direction 'foo' doesn't exist"). Subtlties is dimly printed text that can be used to provide more verbose solutions the use can take to resolve the error, (e.g. "Try running the following command to create the directory: mkdir foo"). 
-	summary:    String,
-	reasons:    Option<Vec<String>>,
-	subtleties: Option<Vec<String>>,
+pub struct UserFacingError<S: UFEState> {
+    summary: String,
+    state: S,
+}
 
-	/// Original Error (if any) used when converted from another error type
-	original_errors: Option<Vec<Box<Error>>>,
+// Initial state of our Error builder
+#[derive(Debug, Clone, Copy)]
+/// Marker traits indicating the start state of the UFE Builder sequence.
+pub struct Start;
+impl UFEState for Start {}
+
+impl UserFacingError<Start> {
+    /// This is how users create a new User Facing Error. The value passed to new() will be used as an error summary. Error summaries are displayed first, prefixed by 'Error: '.
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open");
+    /// ```
+    pub fn new(s: &str) -> UserFacingError<Start> {
+        UserFacingError {
+            summary: s.into(),
+            state: Start,
+        }
+    }
+
+    /// Add a reason to the UserFacingError. Reasons are displayed in a bulleted list below the summary.
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .reason("File not found")
+    ///                             .reason("Directory cannot be entered");
+    /// ```
+    pub fn reason(self, r: &str) -> UserFacingError<Reason> {
+        UserFacingError {
+            summary: self.summary,
+            state: Reason {
+                reasons: vec![r.into()],
+            },
+        }
+    }
+
+    /// Add help text to the error. Help text is displayed last, in a muted fashion. Once you add help text you cannot add additional reasons.
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .reason("File not found")
+    ///                             .helptext("Check if the file exists.");
+    /// ```
+    /// ## This will not compile
+    /// ```compile_fail
+    /// # use user_error::UserFacingError;
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .helptext("Check if the file exists.")
+    ///                             .reason("File not found");
+    /// ```
+    pub fn helptext(self, h: &str) -> UserFacingError<HelpText> {
+        UserFacingError {
+            summary: self.summary,
+            state: HelpText {
+                help_text: h.into(),
+            },
+        }
+    }
+}
+
+static SUMMARY_PREFIX: &str = "\u{001b}[41;1mError:\u{001b}[0m";
+
+impl fmt::Display for UserFacingError<Start> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", SUMMARY_PREFIX, self.summary)
+    }
+}
+
+impl Error for UserFacingError<Start> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
+}
+
+// A User Facing Error that has help text but no reasons
+#[derive(Debug)]
+/// Marker type for valid state transitions. Holds the helptext String.
+pub struct HelpText {
+    help_text: String,
+}
+impl UFEState for HelpText {}
+
+impl fmt::Display for UserFacingError<HelpText> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} {}\n\u{001b}[37m{}\u{001b}[0m",
+            SUMMARY_PREFIX, self.summary, self.state.help_text
+        )
+    }
+}
+
+impl Error for UserFacingError<HelpText> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
+}
+
+// A User Facing Error that has reasons for the error
+#[derive(Debug)]
+/// Marker type for valid state transitions. Holds a Vec<String> of reasons that the error occurred.
+pub struct Reason {
+    reasons: Vec<String>,
+}
+impl UFEState for Reason {}
+
+impl UserFacingError<Reason> {
+    /// Allows the creation of a UserFacingError from a Error. Checks the source() of the error and will list underlying errors as reasons for the error. You may add additional reasons and helptext.
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let ioe = std::io::Error::new(std::io::ErrorKind::Other, "Error");
+    /// let ufe = UserFacingError::from(&ioe);    let ioe = std::io::Error::new(std::io::ErrorKind::Other, "Error");          
+    /// let ufe = ufe.reason("No good reason");
+    /// ```
+    pub fn from(error: &dyn Error) -> Self {
+        /* Check for additional errors from source() */
+        let mut reasons = Vec::new();
+        let mut e = error.source();
+        while let Some(err) = e {
+            reasons.push(err.to_string());
+            e = err.source();
+        }
+        reasons.reverse();
+
+        UserFacingError {
+            summary: error.to_string(),
+            state: Reason { reasons },
+        }
+    }
+
+    /// Add a reason to the UserFacingError. Reasons are displayed in a bulleted list below the summary.
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .reason("File not found")
+    ///                             .reason("Directory cannot be entered");
+    /// ```
+    pub fn reason(mut self, r: &str) -> Self {
+        self.state.reasons.push(r.into());
+        self
+    }
+
+    /// Add help text to the error. Help text is displayed last, in a muted fashion. Once you add help text you cannot add additional reasons.
+    /// # Example
+    /// ```
+    /// use user_error::UserFacingError;
+    ///
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .reason("File not found")
+    ///                             .helptext("Check if the file exists.");
+    /// ```
+    /// ## This will not compile
+    /// ```compile_fail
+    /// # use user_error::UserFacingError;
+    /// let err = UserFacingError::new("File failed to open")
+    ///                             .helptext("Check if the file exists.")
+    ///                             .reason("File not found");
+    /// ```
+    pub fn helptext(self, h: &str) -> UserFacingError<ReasonsAndHelp> {
+        UserFacingError {
+            summary: self.summary,
+            state: ReasonsAndHelp {
+                reasons: self.state.reasons,
+                help_text: h.into(),
+            },
+        }
+    }
+}
+
+/* Helper function to keep things DRY */
+fn format_reasons(reasons: &[String]) -> String {
+    reasons.join("\u{001b}[0m\n\u{001b}[33;1m - \u{001b}[37;1m")
+}
+
+impl fmt::Display for UserFacingError<Reason> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        /* Reasons should always be greater than 0 unless converting from
+           another Error type. Then they maybe not be present.
+        */
+        if !self.state.reasons.is_empty() {
+            let reasons = format_reasons(&self.state.reasons);
+            write!(
+                f,
+                "{} {}\n\u{001b}[33;1m - \u{001b}[37;1m{}\n",
+                SUMMARY_PREFIX, self.summary, reasons
+            )
+        } else {
+            write!(f, "{} {}", SUMMARY_PREFIX, self.summary)
+        }
+    }
+}
+
+impl Error for UserFacingError<Reason> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
+}
+
+// A User Facing Error that has subtleties
+#[derive(Debug)]
+/// Marker type for valid state transitions. Holds both a Vec<String> of reasons the error happened and a String of helptext.
+pub struct ReasonsAndHelp {
+    reasons: Vec<String>,
+    help_text: String,
+}
+impl UFEState for ReasonsAndHelp {}
+
+impl fmt::Display for UserFacingError<ReasonsAndHelp> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let reasons = format_reasons(&self.state.reasons);
+
+        write!(
+            f,
+            "{} {}\n\u{001b}[33;1m - \u{001b}[37;1m{}\n\u{001b}[37m{}\u{001b}[0m",
+            SUMMARY_PREFIX, self.summary, reasons, self.state.help_text
+        )
+    }
+}
+
+impl Error for UserFacingError<ReasonsAndHelp> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
 }
 
 /* Test that you can construct an error. Additional test are in the
@@ -34,34 +273,67 @@ pub struct UserError {
 */
 #[cfg(test)]
 mod tests {
-	use super::*;
-	// Testing is done via document examples and would be redundant here
-	#[test]
-	fn example() {
-		let e = UserError::hardcoded("Failed to build project", 
-                                &[  "Database could not be parsed", 
-                                    "File \"main.db\" not found"], 
-                                &[  "Try: touch main.db", 
-                                    "This command will create an empty database file the program can use"]);
-		eprintln!("{}", e);
-	}
+    use super::*;
+    /* Statics to keep the testing DRY/cleaner */
+    static s: &'static str = "Test Error";
+    static r: &'static str = "Reason 1";
+    static h: &'static str = "Try Again";
 
-	// Tests that rusqlite::error::Error is correctyl coerced into a UserError
-	#[test]
-	fn sqlite_coercion() {
-		use std::path::Path;
-		use rusqlite::{Connection, OpenFlags};
+    #[test]
+    fn new_test() {
+        eprintln!("{}", UserFacingError::new("Test Error"));
+    }
 
-		fn bad_connection() -> Result<Connection, UserError> {
-			let c = Connection::open_with_flags(Path::new("nonexistent.db"), OpenFlags::SQLITE_OPEN_READ_WRITE)?;
-			Ok(c)    
-		}
-		let r = bad_connection();
-		assert!(r.is_err());
-		let mut r = r.unwrap_err();
-		println!("{}", r);
-		r.update_and_push_summary("Failed to create project");
-		println!("----\n{}\n-----", r);
-		r.print_other_errors();
-	}
+    #[test]
+    fn summary_test() {
+        let e = UserFacingError::new(s);
+        let expected = [SUMMARY_PREFIX, " ", s].concat();
+        assert_eq!(e.to_string(), String::from(expected));
+        eprintln!("{}", e);
+    }
+
+    #[test]
+    fn helptext_test() {
+        let e = UserFacingError::new(s).helptext(h);
+        let expected = format!("{} {}\n\u{001b}[37m{}\u{001b}[0m", SUMMARY_PREFIX, s, h);
+        assert_eq!(e.to_string(), String::from(expected));
+        eprintln!("{}", e);
+    }
+
+    #[test]
+    fn reason_test() {
+        let e = UserFacingError::new(s).reason(r);
+        let reasons = format_reasons(&vec![String::from(r)]);
+        let expected = format!(
+            "{} {}\n\u{001b}[33;1m - \u{001b}[37;1m{}\n",
+            SUMMARY_PREFIX, s, reasons
+        );
+        assert_eq!(e.to_string(), String::from(expected));
+        eprintln!("{}", e);
+    }
+
+    #[test]
+    fn reasons_test() {
+        let rr = "Reason 2";
+        let e = UserFacingError::new(s).reason(r).reason(rr);
+        let reasons = format_reasons(&vec![r.into(), rr.into()]);
+        let expected = format!(
+            "{} {}\n\u{001b}[33;1m - \u{001b}[37;1m{}\n",
+            SUMMARY_PREFIX, s, reasons
+        );
+        assert_eq!(e.to_string(), String::from(expected));
+        eprintln!("{}", e);
+    }
+
+    #[test]
+    fn reason_and_helptext_test() {
+        let e = UserFacingError::new(s).reason(r).helptext(h);
+        let reasons = format_reasons(&vec![r.into()]);
+        let expected = format!(
+            "{} {}\n\u{001b}[33;1m - \u{001b}[37;1m{}\n\u{001b}[37m{}\u{001b}[0m",
+            SUMMARY_PREFIX, s, reasons, h
+        );
+        assert_eq!(e.to_string(), String::from(expected));
+        eprintln!("{}", e);
+    }
 }
