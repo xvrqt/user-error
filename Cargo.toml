@@ -5,7 +5,6 @@ authors = ["Amy <git@xvrqt.com>"]
 edition = "2018"
 repository = "https://github.com/xvrqt/user-error.git"
 homepage = "https://github.com/xvrqt/user-error"
-license = "MIT OR BSD-3-Clause"
 license-file = "LICENSE.txt"
 readme = "README.md"
 keywords = ["errors", "pretty-print", "struct", "xvrqt"]
