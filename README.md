@@ -34,6 +34,7 @@ Error: Failed to build project
 Try: touch main.db
 ```
 If the user has colors enabled on their terminal, it may look something like this:
+![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/error_example.png)
 ![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/user-error-output.png)
 
 ### Print
@@ -123,3 +124,5 @@ fn main() {
     me.print_and_exit();
 }
 ```
+This will print something that looks like this:
+![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/error_example.png)
