@@ -34,7 +34,7 @@ Error: Failed to build project
 Try: touch main.db
 ```
 If the user has colors enabled on their terminal, it may look something like this:
-![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/user-error-output.png)
+![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.cdn.digitaloceanspaces.com/image-cache/user-error-output.png)
 
 ### Print
 If for some reason you don't want to follow the format!() convention, you can call print() on a UserError and it will pretty print itself to stderr
@@ -124,4 +124,4 @@ fn main() {
 }
 ```
 This will print something that looks like this:
-![UFE default trait implementation printout](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/error_example.png)
+![UFE default trait implementation printout](https://xvrqt.sfo2.cdn.digitaloceanspaces.com/image-cache/error_example.png)
