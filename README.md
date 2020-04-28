@@ -1,5 +1,5 @@
 # UserFacingError
-UserError is an error type that helps you format and print good looking error messages for users of your CLI application. These errors are intended for consumption by a human, not your program. They are divided into 3 parts: summary, reasons and help text.
+UserFacingError is an error type that helps you format and print good looking error messages for users of your CLI application. These errors are intended for consumption by a human, not your program. They are divided into 3 parts: summary, reasons and help text.
 
 **Summary:** A String representing a one-line description of your error. A summary is mandatory and is printed boldly in red.
 

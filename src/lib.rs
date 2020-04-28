@@ -308,7 +308,7 @@ impl UserFacingError {
     /// ```
     pub fn push(&mut self, summary: &str) {
         match self.reasons.as_mut() {
-            Some(reasons) => reasons.push(summary.into()),
+            Some(reasons) => reasons.insert(0, summary.into()),
             None => self.reasons = Some(vec![summary.into()]),
         }
     }
@@ -411,6 +411,26 @@ mod tests {
 
         /* Create Reasons String */
         let reasons = vec![String::from(R), String::from(R)];
+        let mut reason_strings = Vec::with_capacity(reasons.len());
+        for reason in reasons {
+            let bullet_point = [REASON_PREFIX, &reason].concat();
+            reason_strings.push(bullet_point);
+        }
+        /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
+        let reasons = [&reason_strings.join("\n"), RESET].concat();
+
+        let expected = format!("{}{}{}\n{}\n", SUMMARY_PREFIX, S, RESET, reasons);
+        assert_eq!(e.to_string(), String::from(expected));
+        eprintln!("{}", e);
+    }
+
+    #[test]
+    fn push_test() {
+        let mut e = UserFacingError::new(S).reason("R1");
+        e.push("R2");
+
+        /* Create Reasons String */
+        let reasons = vec![String::from("R2"), String::from("R1")];
         let mut reason_strings = Vec::with_capacity(reasons.len());
         for reason in reasons {
             let bullet_point = [REASON_PREFIX, &reason].concat();
