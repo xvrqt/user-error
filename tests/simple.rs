@@ -32,7 +32,7 @@ fn to_error_coercion_test() {
 
 // Dummy Error type to ensure that we can implement UFE on it
 #[derive(Debug)]
-struct MyError;
+struct MyError { sub: MySubError }
 
 impl Display for MyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -42,6 +42,38 @@ impl Display for MyError {
 
 impl Error for MyError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
+       Some(&self.sub)
+    }
+}
+
+// Dummy sub error to represent the error chain
+#[derive(Debug)]
+struct MySubError { sub: MySubSubError }
+
+impl Display for MySubError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "MySubError")
+    }
+}
+
+impl Error for MySubError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(&self.sub)
+    }
+}
+
+// Dummy sub-sub error to represent the error chain
+#[derive(Debug)]
+struct MySubSubError;
+
+impl Display for MySubSubError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "MySubSubError")
+    }
+}
+
+impl Error for MySubSubError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         None
     }
 }
@@ -50,7 +82,7 @@ impl UFE for MyError {}
 
 #[test]
 fn custom_error_implements_ufe() {
-    let me = MyError {};
+    let me = MyError { sub: MySubError { sub: MySubSubError {}}};
     me.summary();
     me.reasons();
     me.helptext();
