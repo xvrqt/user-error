@@ -31,10 +31,9 @@ const RESET: &str = "\u{001b}[0m";
 
 // Helper function to keep things DRY
 // Takes a dyn Error.source() and returns a Vec of Strings representing all the .sources() in the error chain (if any)
-fn error_sources(source: Option<&(dyn Error + 'static)>) -> Option<Vec<String>> {
+fn error_sources(mut source: Option<&(dyn Error + 'static)>) -> Option<Vec<String>> {
     /* Check if we have any sources to derive reasons from */
-    let mut source = source;
-    if let Some(_) = source {
+    if source.is_some() {
         /* Add all the error sources to a list of reasons for the error */
         let mut reasons = Vec::new();
         while let Some(error) = source {
@@ -193,11 +192,11 @@ impl Display for UserFacingError {
 
         /* Love this - thanks Rust! */
         match (summary, reasons, helptext) {
-            (summary, None, None) => write!(f, "{}\n", summary),
-            (summary, Some(reasons), None) => write!(f, "{}\n{}\n", summary, reasons),
-            (summary, None, Some(helptext)) => write!(f, "{}\n{}\n", summary, helptext),
+            (summary, None, None) => writeln!(f, "{}", summary),
+            (summary, Some(reasons), None) => writeln!(f, "{}\n{}", summary, reasons),
+            (summary, None, Some(helptext)) => writeln!(f, "{}\n{}", summary, helptext),
             (summary, Some(reasons), Some(helptext)) => {
-                write!(f, "{}\n{}\n{}\n", summary, reasons, helptext)
+                writeln!(f, "{}\n{}\n{}", summary, reasons, helptext)
             }
         }
     }
