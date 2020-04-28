@@ -21,7 +21,7 @@ use std::error::Error;
  *************/
 
 // 'Error:' with a red background and white, bold, text
-const SUMMARY_PREFIX: &str = "\u{001b}[37;41;1mError: \u{001b}[49;31;1m";
+const SUMMARY_PREFIX: &str = "\u{001b}[37;41;1mError:\u{001b}[49;31;1m ";
 // ' - ' bullet point in yellow and text in bold white
 const REASON_PREFIX: &str = "\u{001b}[33;49;1m - \u{001b}[37;49;1m";
 // Muted white helptext
@@ -88,8 +88,8 @@ pub trait UFE: Error {
         if let Some(reasons) = self.reasons() {
             /* Vector to store the intermediate bullet point strings */
             let mut reason_strings = Vec::with_capacity(reasons.len());
-            for reason in reasons.iter().rev() {
-                let bullet_point = [REASON_PREFIX, reason].concat();
+            for reason in reasons {
+                let bullet_point = [REASON_PREFIX, &reason].concat();
                 reason_strings.push(bullet_point);
             }
             /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
@@ -412,7 +412,7 @@ mod tests {
         /* Create Reasons String */
         let reasons = vec![String::from(R), String::from(R)];
         let mut reason_strings = Vec::with_capacity(reasons.len());
-        for reason in reasons.iter().rev() {
+        for reason in reasons {
             let bullet_point = [REASON_PREFIX, &reason].concat();
             reason_strings.push(bullet_point);
         }
@@ -431,7 +431,7 @@ mod tests {
         /* Create Reasons String */
         let reasons = vec![String::from(R), String::from(R)];
         let mut reason_strings = Vec::with_capacity(reasons.len());
-        for reason in reasons.iter().rev() {
+        for reason in reasons {
             let bullet_point = [REASON_PREFIX, &reason].concat();
             reason_strings.push(bullet_point);
         }
