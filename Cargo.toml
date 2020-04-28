@@ -5,9 +5,9 @@ authors = ["Amy <git@xvrqt.com>"]
 edition = "2018"
 repository = "https://github.com/xvrqt/user-error.git"
 homepage = "https://github.com/xvrqt/user-error"
-license = "BSD-3-Clause"
+license = "MIT OR BSD-3-Clause"
+license-file = "LICENSE.txt"
 readme = "README.md"
-description = "Simple error type that display in a clear and beautiful manner to the user of a CLI application."
 keywords = ["errors", "pretty-print", "struct", "xvrqt"]
 categories = ["data-structures", "command-line-interface"]
-
+description = "UserFacingError is an error crate that allows you to pretty print your errors and error chain for consumption by the end user. If you implement the UFE trait, the default implementation will let your print your error nicely to the TTY. There is also the UserFacingError type that most std Errors can be converted into, or that you can use directly."
