@@ -21,9 +21,9 @@ use std::error::Error;
  *************/
 
 // 'Error:' with a red background and white, bold, text
-const SUMMARY_PREFIX: &str = "\u{001b}[37;41;1mError:\u{001b}[49;31;1m ";
+const SUMMARY_PREFIX: &str = "\u{001b}[97;41;22mError:\u{001b}[91;49;1m ";
 // ' - ' bullet point in yellow and text in bold white
-const REASON_PREFIX: &str = "\u{001b}[33;49;1m - \u{001b}[37;49;1m";
+const REASON_PREFIX: &str = "\u{001b}[93;49;1m - \u{001b}[97;49;1m";
 // Muted white helptext
 const HELPTEXT_PREFIX: &str = "\u{001b}[37;49;2m";
 // ASCII Reset formatting escape code
