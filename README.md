@@ -124,4 +124,5 @@ fn main() {
 }
 ```
 This will print something that looks like this:
+
 ![UFE default trait implementation printout](https://xvrqt.sfo2.cdn.digitaloceanspaces.com/image-cache/error_example.png)
