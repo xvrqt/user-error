@@ -322,16 +322,16 @@ impl UserFacingError {
     /// let mut err = UserFacingError::new("File failed to open");
     /// err.push("Failed Task");
     /// ```
-    pub fn push(&mut self, summary: &str) {
+    pub fn push(&mut self, new_summary: &str) {
         // Add the old summary to the list of reasons
         let old_summary = self.summary();
         match self.reasons.as_mut() {
             Some(reasons) => reasons.insert(0, old_summary),
-            None => self.reasons = Some(vec![summary.into()]),
+            None => self.reasons = Some(vec![old_summary.into()]),
         }
 
         // Update the summary
-        self.summary = summary.to_string();
+        self.summary = new_summary.to_string();
     }
 
     /// Add a reason to the UserFacingError. Reasons are displayed in a bulleted list below the summary, in the reverse order they were added.
