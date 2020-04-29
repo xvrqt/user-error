@@ -11,7 +11,7 @@ UserFacingError is an error type that helps you format and print good looking er
 Add the following to your Cargo.toml:
 ```yaml
 [dependencies]
-user-error = "1.2.0"
+user-error = "1.2.2"
 ```
 
 Add the following to your main.rs/lib.rs:

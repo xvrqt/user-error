@@ -157,12 +157,17 @@ pub trait UFE: Error {
 
 /// The eponymous struct. You can create a new one from using user_error::UserFacingError::new()
 /// I recommend you use your own error types and have them implement UFE instead of useing UserFacingError directly. This is more of an example type, or a way to construct a pretty message.
+type Summary = String;
+type Reasons = Option<Vec<String>>;
+type Helptext = Option<String>;
+type Source = Option<Box<(dyn Error)>>;
+
 #[derive(Debug)]
 pub struct UserFacingError {
-    summary: String,
-    reasons: Option<Vec<String>>,
-    helptext: Option<String>,
-    source: Option<Box<(dyn Error)>>,
+    summary: Summary,
+    reasons: Reasons,
+    helptext: Helptext,
+    source: Source,
 }
 
 /******************
@@ -172,13 +177,13 @@ pub struct UserFacingError {
 // Implement our own trait for our example struct
 // Cloning is not super efficient but this should be the last thing a program does, and it will only do it once so... ¯\_(ツ)_/¯
 impl UFE for UserFacingError {
-    fn summary(&self) -> String {
+    fn summary(&self) -> Summary {
         self.summary.clone()
     }
-    fn reasons(&self) -> Option<Vec<String>> {
+    fn reasons(&self) -> Reasons {
         self.reasons.clone()
     }
-    fn helptext(&self) -> Option<String> {
+    fn helptext(&self) -> Helptext {
         self.helptext.clone()
     }
 }
@@ -212,22 +217,41 @@ impl Error for UserFacingError {
     }
 }
 
-/// Allows you to create UserFacingErrors From std Errors.
+// Helper function to keep things DRY
+fn get_ufe_struct_members(error: &(dyn Error)) -> (Summary, Reasons) {
+    /* Error Display format is the summary */
+    let summary = error.to_string();
+    /* Form the reasons from the error source chain */
+    let reasons = error_sources(error.source());
+    (summary, reasons)
+}
+
+/// Allows you to create UserFacingErrors From std::io::Error for convenience
 /// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext of something you can use this.
-impl From<Box<(dyn Error)>> for UserFacingError {
-    fn from(error: Box<(dyn Error)>) -> UserFacingError {
-        /* Error Display format is the summary */
-        let summary = error.to_string();
-        /* Form the reasons from the error source chain */
-        let reasons = error_sources(error.source());
-        /* Set the source */
-        let source = Some(error);
+impl From<std::io::Error> for UserFacingError {
+    fn from(error: std::io::Error) -> UserFacingError {
+        let (summary, reasons) = get_ufe_struct_members(&error);
 
         UserFacingError {
             summary,
             reasons,
             helptext: None,
-            source,
+            source: Some(Box::new(error)),
+        }
+    }
+}
+
+/// Allows you to create UserFacingErrors From std Errors.
+/// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext of something you can use this.
+impl From<Box<(dyn Error)>> for UserFacingError {
+    fn from(error: Box<(dyn Error)>) -> UserFacingError {
+        let (summary, reasons) = get_ufe_struct_members(error.as_ref());
+        
+        UserFacingError {
+            summary,
+            reasons,
+            helptext: None,
+            source: Some(error),
         }
     }
 }
@@ -236,10 +260,7 @@ impl From<Box<(dyn Error)>> for UserFacingError {
 /// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext or something you can use this.
 impl From<&(dyn Error)> for UserFacingError {
     fn from(error: &(dyn Error)) -> UserFacingError {
-        /* Error Display format is the summary */
-        let summary = error.to_string();
-        /* Form the reasons from the error source chain */
-        let reasons = error_sources(error.source());
+        let (summary, reasons) = get_ufe_struct_members(error);
 
         UserFacingError {
             summary,
@@ -256,17 +277,13 @@ impl<T: Debug> From<Result<T, Box<dyn Error>>> for UserFacingError {
     fn from(error: Result<T, Box<dyn Error>>) -> UserFacingError {
         /* Panics if you try to convert an Ok() Result to a UserFacingError */
         let error = error.unwrap_err();
-
-        /* Error Display format is the summary */
-        let summary = error.to_string();
-        /* Form the reasons from the error source chain */
-        let reasons = error_sources(error.source());
+        let (summary, reasons) = get_ufe_struct_members(error.as_ref());
 
         UserFacingError {
             summary,
             reasons,
             helptext: None,
-            source: None,
+            source: Some(error),
         }
     }
 }

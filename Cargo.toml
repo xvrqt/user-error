@@ -1,6 +1,6 @@
 [package]
 name = "user-error"
-version = "1.2.1"
+version = "1.2.2"
 authors = ["Amy <git@xvrqt.com>"]
 edition = "2018"
 repository = "https://github.com/xvrqt/user-error.git"
