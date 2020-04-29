@@ -154,14 +154,13 @@ pub trait UFE: Error {
 /**********
  * STRUCT *
  **********/
-
-/// The eponymous struct. You can create a new one from using user_error::UserFacingError::new()
-/// I recommend you use your own error types and have them implement UFE instead of useing UserFacingError directly. This is more of an example type, or a way to construct a pretty message.
 type Summary = String;
 type Reasons = Option<Vec<String>>;
 type Helptext = Option<String>;
 type Source = Option<Box<(dyn Error)>>;
 
+/// The eponymous struct. You can create a new one from using user_error::UserFacingError::new()
+/// I recommend you use your own error types and have them implement UFE instead of useing UserFacingError directly. This is more of an example type, or a way to construct a pretty message.
 #[derive(Debug)]
 pub struct UserFacingError {
     summary: Summary,
@@ -246,7 +245,7 @@ impl From<std::io::Error> for UserFacingError {
 impl From<Box<(dyn Error)>> for UserFacingError {
     fn from(error: Box<(dyn Error)>) -> UserFacingError {
         let (summary, reasons) = get_ufe_struct_members(error.as_ref());
-        
+
         UserFacingError {
             summary,
             reasons,
