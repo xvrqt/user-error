@@ -451,7 +451,7 @@ mod tests {
         e.push("R2");
 
         /* Create Reasons String */
-        let reasons = vec![String::from("R2"), String::from("R1")];
+        let reasons = vec![String::from(S), String::from("R1")];
         let mut reason_strings = Vec::with_capacity(reasons.len());
         for reason in reasons {
             let bullet_point = [REASON_PREFIX, &reason].concat();
@@ -460,7 +460,7 @@ mod tests {
         /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
         let reasons = [&reason_strings.join("\n"), RESET].concat();
 
-        let expected = format!("{}{}{}\n{}\n", SUMMARY_PREFIX, S, RESET, reasons);
+        let expected = format!("{}{}{}\n{}\n", SUMMARY_PREFIX, "R2", RESET, reasons);
         assert_eq!(e.to_string(), String::from(expected));
         eprintln!("{}", e);
     }
