@@ -323,10 +323,15 @@ impl UserFacingError {
     /// err.push("Failed Task");
     /// ```
     pub fn push(&mut self, summary: &str) {
+        // Add the old summary to the list of reasons
+        let old_summary = self.summary();
         match self.reasons.as_mut() {
-            Some(reasons) => reasons.insert(0, summary.into()),
+            Some(reasons) => reasons.insert(0, old_summary),
             None => self.reasons = Some(vec![summary.into()]),
         }
+
+        // Update the summary
+        self.summary = summary.to_string();
     }
 
     /// Add a reason to the UserFacingError. Reasons are displayed in a bulleted list below the summary, in the reverse order they were added.
