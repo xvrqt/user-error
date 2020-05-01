@@ -1,6 +1,6 @@
 # UserFacingError
 
-![build-status-shield](https://img.shields.io/github/workflow/status/xvrqt/user-error/Rust)
+[![build-status-shield](https://img.shields.io/github/workflow/status/xvrqt/user-error/Rust)](https://github.com/xvrqt/user-error/actions)
 [![github-issues-open-shield](https://img.shields.io/github/issues-raw/xvrqt/user-error)](https://github.com/xvrqt/user-error/issues)
 [![crates-io-version-shield](https://img.shields.io/crates/v/user-error)](https://crates.io/crates/user-error)
 [![crates-io-downloads-shield](https://img.shields.io/crates/d/user-error)](https://crates.io/crates/user-error)
