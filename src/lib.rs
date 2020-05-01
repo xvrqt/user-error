@@ -50,6 +50,37 @@ fn error_sources(mut source: Option<&(dyn Error + 'static)>) -> Option<Vec<Strin
  * TRAIT *
  *********/
 
+/// Convenience function that converts the summary into pretty String.
+fn pretty_summary(summary: &str) -> String {
+    [SUMMARY_PREFIX, summary, RESET].concat()
+}
+
+/// Convenience function that converts the reasons into pretty String.
+fn pretty_reasons(reasons: Reasons) -> Option<String> {
+    /* Print list of Reasons (if any) */
+    if let Some(reasons) = reasons {
+        /* Vector to store the intermediate bullet point strings */
+        let mut reason_strings = Vec::with_capacity(reasons.len());
+        for reason in reasons {
+            let bullet_point = [REASON_PREFIX, &reason].concat();
+            reason_strings.push(bullet_point);
+        }
+        /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
+        Some([&reason_strings.join("\n"), RESET].concat())
+    } else {
+        None
+    }
+}
+
+/// Convenience function that converts the help text into pretty String.
+fn pretty_helptext(helptext: Helptext) -> Option<String> {
+    if let Some(helptext) = helptext {
+        Some([HELPTEXT_PREFIX, &helptext, RESET].concat())
+    } else {
+        None
+    }
+}
+
 /// You can implement UFE on your error types pretty print them. The default implementation will print Error: <your error .to_string()> followed by a list of reasons that are any errors returned by .source()
 /// You should only override the summary, reasons and helptext functions. The pretty print versions of these are used by print(), print_and_exit() and contain the formatting. If you wish to change the formatting you should update it with the formatting functions.
 pub trait UFE: Error {
@@ -57,7 +88,7 @@ pub trait UFE: Error {
      * IMPLENT ME *
      **************/
 
-    /// Returns a summary of the error. This will be printed in red, prefixed by "Error: ", at the top of the error message. This is not Optional.
+    /// Returns a summary of the error. This will be printed in red, prefixed by "Error: ", at the top of the error message.
     fn summary(&self) -> String {
         self.to_string()
     }
@@ -71,41 +102,6 @@ pub trait UFE: Error {
     /// Returns help text that is listed below the reasons in a muted fashion. Useful for additional details, or suggested next steps.
     fn helptext(&self) -> Option<String> {
         None
-    }
-
-    /****************
-     * PRETTY PRINT *
-     ****************/
-
-    /// Convenience function that converts the summary into pretty String. You shouldn't implement this.
-    fn pretty_summary(&self) -> String {
-        [SUMMARY_PREFIX, &self.summary(), RESET].concat()
-    }
-
-    /// Convenience function that converts the reasons into pretty String. You shouldn't implement this.
-    fn pretty_reasons(&self) -> Option<String> {
-        /* Print list of Reasons (if any) */
-        if let Some(reasons) = self.reasons() {
-            /* Vector to store the intermediate bullet point strings */
-            let mut reason_strings = Vec::with_capacity(reasons.len());
-            for reason in reasons {
-                let bullet_point = [REASON_PREFIX, &reason].concat();
-                reason_strings.push(bullet_point);
-            }
-            /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
-            Some([&reason_strings.join("\n"), RESET].concat())
-        } else {
-            None
-        }
-    }
-
-    /// Convenience function that converts the help text into pretty String. You shouldn't implement this.
-    fn pretty_helptext(&self) -> Option<String> {
-        if let Some(helptext) = self.helptext() {
-            Some([HELPTEXT_PREFIX, &helptext, RESET].concat())
-        } else {
-            None
-        }
     }
 
     /**********
@@ -123,15 +119,15 @@ pub trait UFE: Error {
     /// ```
     fn print(&self) {
         /* Print Summary */
-        eprintln!("{}", self.pretty_summary());
+        eprintln!("{}", pretty_summary(&self.summary()));
 
         /* Print list of Reasons (if any) */
-        if let Some(reasons) = self.pretty_reasons() {
+        if let Some(reasons) = pretty_reasons(self.reasons()) {
             eprintln!("{}", reasons);
         }
 
         /* Print help text (if any) */
-        if let Some(helptext) = self.pretty_helptext() {
+        if let Some(helptext) = pretty_helptext(self.helptext()) {
             eprintln!("{}", helptext);
         }
     }
@@ -190,9 +186,9 @@ impl UFE for UserFacingError {
 // Implement Display so our struct also implements std::error::Error
 impl Display for UserFacingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let summary = self.pretty_summary();
-        let reasons = self.pretty_reasons();
-        let helptext = self.pretty_helptext();
+        let summary = pretty_summary(&self.summary());
+        let reasons = pretty_reasons(self.reasons());
+        let helptext = pretty_helptext(self.helptext());
 
         /* Love this - thanks Rust! */
         match (summary, reasons, helptext) {
@@ -224,6 +220,11 @@ fn get_ufe_struct_members(error: &(dyn Error)) -> (Summary, Reasons) {
     let reasons = error_sources(error.source());
     (summary, reasons)
 }
+
+//
+// Instead of converting from std Error, convert from types that implement UFE :)
+// Don't have my type implement std Error
+//
 
 /// Allows you to create UserFacingErrors From std::io::Error for convenience
 /// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext of something you can use this.
@@ -352,6 +353,8 @@ impl UserFacingError {
         };
         self
     }
+
+    // Return ref to previous?
 
     /// Clears all reasons from a UserFacingError.
     /// # Example
