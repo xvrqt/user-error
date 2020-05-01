@@ -31,7 +31,7 @@ This repository contains:
             - [Print](#print)
             - [Print and Exit](#print-and-exit)
     - [UserFacingError Type](#userfacingerror-type)
-        - [Construction](#constructing)
+        - [Construction](#construction)
             - [Builder Pattern](#builder-pattern)
             - [From Other Errors](#from-other-error-types)
         - [Methods](#methods)
@@ -376,10 +376,6 @@ This prints:
 Error: Program Failed!
  - Bad luck
 ```
-
-## Related Efforts
-
-- Need to look up related human readable error crates. If you have a recommendation, open a PR :D
 
 ## Maintainers
 
