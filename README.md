@@ -1,13 +1,13 @@
 # UserFacingError
 
 ![build-status-shield](https://img.shields.io/github/workflow/status/xvrqt/user-error/Rust)
-![github-issues-open-shield](https://img.shields.io/github/issues-raw/xvrqt/user-error)
-![crates-io-version-shield](https://img.shields.io/crates/v/user-error)
-![crates-io-downloads-shield](https://img.shields.io/crates/d/user-error)
-![license-shield](https://img.shields.io/github/license/xvrqt/user-error)
+[![github-issues-open-shield](https://img.shields.io/github/issues-raw/xvrqt/user-error)](https://github.com/xvrqt/user-error/issues)
+[![crates-io-version-shield](https://img.shields.io/crates/v/user-error)](https://crates.io/crates/user-error)
+[![crates-io-downloads-shield](https://img.shields.io/crates/d/user-error)](https://crates.io/crates/user-error)
+[![license-shield](https://img.shields.io/github/license/xvrqt/user-error)](https://github.com/xvrqt/user-error/blob/master/LICENSE.txt)
 -
-![discord-status-shield](https://img.shields.io/discord/524687904522371072)
-![twitter-shield](https://img.shields.io/twitter/follow/xvrqt?label=%40xvrqt&style=social)
+[![discord-status-shield](https://img.shields.io/discord/524687904522371072)](https://discord.xvrqt.com)
+[![twitter-shield](https://img.shields.io/twitter/follow/xvrqt?label=%40xvrqt&style=social)](https://twitter.com/xvrqt)
 
 Pretty printed errors for your CLI application.
 
