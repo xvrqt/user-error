@@ -29,12 +29,12 @@ This repository contains:
             - [Helptext](#helptext)
         - [Other Methods](#other-methods)
             - [Print](#print)
-            - [Print & Exit](#print-&-exit)
+            - [Print and Exit](#print-and-exit)
     - [UserFacingError](#userfacingerror)
         - [Construction](#constructing)
             - [Builder Pattern](#builder-pattern)
             - [From Other Errors](#from-other-error-types)
-        -[Methods](#methods)
+        - [Methods](#methods)
             - [Update](#update)
             - [Push](#push)
             - [Clear Reasons](#clear-reasons)
@@ -182,7 +182,7 @@ Error: Failed to build project
  - Database could not be parsed
 ```
 
-#### Print & Exit
+#### Print and Exit
 Since constructing this error is likely the last thing your program will do, you can also call `.print_and_exit()` to print the error and then terminate the process with status code 1.
 
 ```rust
