@@ -50,6 +50,8 @@ fn error_sources(mut source: Option<&(dyn Error + 'static)>) -> Option<Vec<Strin
  * TRAIT *
  *********/
 
+// Helper Functions
+
 /// Convenience function that converts the summary into pretty String.
 fn pretty_summary(summary: &str) -> String {
     [SUMMARY_PREFIX, summary, RESET].concat()
@@ -145,6 +147,45 @@ pub trait UFE: Error {
         self.print();
         std::process::exit(1)
     }
+
+    /// Consumes the UFE and returns a UserFacingError. Useful if you want access to additional functions to edit the error message before exiting the program.
+    /// # Example
+    /// ```
+    /// use user_error::{UserFacingError, UFE};
+    /// use std::fmt::{self, Display};
+    /// use std::error::Error;
+    /// 
+    /// #[derive(Debug)]
+    /// struct MyError {}
+    ///
+    /// impl Display for MyError {
+    ///     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    ///         write!(f, "MyError")
+    ///     }
+    /// }
+    ///
+    /// impl Error for MyError {
+    ///     fn source(&self) -> Option<&(dyn Error + 'static)> { None }
+    /// }
+    ///
+    /// impl UFE for MyError {}
+    /// 
+    /// fn main() {
+    ///     let me = MyError {};
+    ///     me.print();
+    ///     me.to_ufe()
+    ///         .help("Added helptext")
+    ///         .print();
+    /// }
+    /// ```
+    fn to_ufe(&self) -> UserFacingError {
+        UserFacingError {
+            summary: self.summary(),
+            reasons: self.reasons(),
+            helptext: self.helptext(),
+            source: None,
+        }
+    }
 }
 
 /**********
@@ -168,20 +209,6 @@ pub struct UserFacingError {
 /******************
  * IMPLEMENTATION *
  ******************/
-
-// Implement our own trait for our example struct
-// Cloning is not super efficient but this should be the last thing a program does, and it will only do it once so... ¯\_(ツ)_/¯
-impl UFE for UserFacingError {
-    fn summary(&self) -> Summary {
-        self.summary.clone()
-    }
-    fn reasons(&self) -> Reasons {
-        self.reasons.clone()
-    }
-    fn helptext(&self) -> Helptext {
-        self.helptext.clone()
-    }
-}
 
 // Implement Display so our struct also implements std::error::Error
 impl Display for UserFacingError {
@@ -209,6 +236,20 @@ impl Error for UserFacingError {
             Some(_) => self.source.as_deref(),
             None => None,
         }
+    }
+}
+
+// Implement our own trait for our example struct
+// Cloning is not super efficient but this should be the last thing a program does, and it will only do it once so... ¯\_(ツ)_/¯
+impl UFE for UserFacingError {
+    fn summary(&self) -> Summary {
+        self.summary.clone()
+    }
+    fn reasons(&self) -> Reasons {
+        self.reasons.clone()
+    }
+    fn helptext(&self) -> Helptext {
+        self.helptext.clone()
     }
 }
 
@@ -288,7 +329,6 @@ impl<T: Debug> From<Result<T, Box<dyn Error>>> for UserFacingError {
     }
 }
 
-// Implement convenience functions to modify the UserFacingError struct
 impl UserFacingError {
     /// This is how users create a new User Facing Error. The value passed to new() will be used as an error summary. Error summaries are displayed first, prefixed by 'Error: '.
     /// # Example
