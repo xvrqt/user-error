@@ -39,7 +39,6 @@ This repository contains:
             - [Push](#push)
             - [Clear Reasons](#clear-reasons)
             - [Clear Help Text](#clear-help-text)
-- [Related Efforts](#related-efforts)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [License](#license)
