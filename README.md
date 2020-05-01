@@ -30,7 +30,7 @@ This repository contains:
         - [Other Methods](#other-methods)
             - [Print](#print)
             - [Print and Exit](#print-and-exit)
-    - [UserFacingError](#userfacingerror)
+    - [UserFacingError Type](#userfacingerror-type)
         - [Construction](#constructing)
             - [Builder Pattern](#builder-pattern)
             - [From Other Errors](#from-other-error-types)
@@ -201,7 +201,7 @@ Error: Failed to build project
  - Database could not be parsed
 ```
 
-### UserFacingError
+### UserFacingError Type
 
 UserFacingError is an error type that helps you format and print good looking error messages for users of your CLI application. These errors are intended for consumption by a human, not your program. They are divided into 3 parts: summary, reasons and help text.
 
