@@ -1,13 +1,13 @@
 # UserFacingError
 
-[![standard-readme-compliant-shield](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 ![build-status-shield](https://img.shields.io/github/workflow/status/xvrqt/user-error/Rust)
-![discord-status-shield](https://img.shields.io/discord/524687904522371072)
-![crates-io-downloads-shield](https://img.shields.io/crates/d/user-error)
 ![github-issues-open-shield](https://img.shields.io/github/issues-raw/xvrqt/user-error)
-![license-shield](https://img.shields.io/github/license/xvrqt/user-error)
-![twitter-shield](https://img.shields.io/twitter/follow/xvrqt?label=%40xvrqt&style=social)
 ![crates-io-version-shield](https://img.shields.io/crates/v/user-error)
+![crates-io-downloads-shield](https://img.shields.io/crates/d/user-error)
+![license-shield](https://img.shields.io/github/license/xvrqt/user-error)
+-
+![discord-status-shield](https://img.shields.io/discord/524687904522371072)
+![twitter-shield](https://img.shields.io/twitter/follow/xvrqt?label=%40xvrqt&style=social)
 
 Pretty printed errors for your CLI application.
 
