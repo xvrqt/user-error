@@ -65,7 +65,7 @@ I love Rust's Result types, and using enums for matching and &str for error mess
 Add the following to your Cargo.toml:
 ```yaml
 [dependencies]
-user-error = "1.2.5"
+user-error = "1.2.6"
 ```
 
 ## Usage
