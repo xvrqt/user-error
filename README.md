@@ -15,7 +15,18 @@ This repository contains:
 
 1. A new trait, **UFE**, that you can implement on your Error types to pretty print them
 2. A new type, UserFacingError, that you can use to construct pretty CLI error messages
-3. Handy macros to implemnt UFE on your type, and to convert `Box<dyn Error>` to UserFacing Errors
+3. Ability to convert your error types into UserFacingErrors
+
+UserFacingError is an error type, or trait, that helps you format and print good looking error messages for users of your CLI application. These errors are intended for consumption by humans, not your program. They are divided into 3 parts: summary, reasons and help text.
+
+**Summary:** A String representing a one-line description of your error. A summary is mandatory and is printed boldly in red.
+
+**Reasons:** A vector of Strings explaining in more detail _why_ this error occured. Reasons are optional and if the terminal supports color, the bullet point ('-') will be colored yellow. Each reason will be printed on its own line.
+
+**Help Text:** A String explaining additional information, including what the user can do about the error, or where to file a bug. Help text is optional and if the terminal supports color it will be printed _dimly_.
+
+If the user has colors enabled on their terminal, it may look something like this:
+![Quickstart example of user-error library for Rust](https://xvrqt.sfo2.cdn.digitaloceanspaces.com/image-cache/user-error-output.png)
 
 ## Table of Contents
 
@@ -27,9 +38,10 @@ This repository contains:
             - [Summary](#summary)
             - [Reasons](#reasons)
             - [Helptext](#helptext)
-        - [Other Methods](#other-methods)
+        - [Trait Methods](#trait-methods)
             - [Print](#print)
             - [Print and Exit](#print-and-exit)
+            - [Into UFE](#into-ufe)
     - [UserFacingError Type](#userfacingerror-type)
         - [Construction](#construction)
             - [Builder Pattern](#builder-pattern)
@@ -45,12 +57,10 @@ This repository contains:
 
 ## Background
 
-UserFacingError is intended to print errors to users of command line applications in a sensible, pretty format.
-I love Rust's Result types, and using enums for matching and &str for errors and matching is great for development but less great for end users of CLI applications. For this I made a `UserFacingError` which can be used to quickly construct a pretty error suitable to help users what went wrong and what they can do about it.
+UserFacingError makes it easy to print errors to users of your command line applications in a sensible, pretty format.
+I love Rust's Result types, and using enums for matching and &str for error messages. It's great for development but less great for end users of CLI applications. For this I made a `UserFacingError` which can be used to quickly construct a pretty error message suitable to inform users what went wrong and what they can do about it.
 
 ## Install
-
-This project uses [node](http://nodejs.org) and [npm](https://npmjs.com). Go check them out if you don't have them locally installed.
 
 Add the following to your Cargo.toml:
 ```yaml
@@ -62,7 +72,7 @@ user-error = "1.2.4"
 
 ### UFE Trait
 
-You can trivially implement the UFE trait on your custom error types, allowing you to pretty print them to stderr. The UFE trait requires your trait also implement Error.
+You can trivially implement the UFE trait on your custom error types, allowing you to pretty print them to stderr. The UFE trait requires your type also implements the Error trait.
 
 ```rust
 #[derive(Debug)]
@@ -85,58 +95,60 @@ impl UFE for MyError {}
 ```
 
 #### Default Implementations
-There are three functions you may optionally override:
+There are three functions you may optionally implement:
 
 1. `.summary() -> String` - returns a string to be used as the error summary
-2. `.reasons() -> Option<Vec<String>>` - optionally return a Vec of Strings representing the cause of the error
+2. `.reasons() -> Option<Vec<String>>` - optionally return a Vec of Strings representing the causes of the error
 3. `.helptext() -> Option<String>` - optionally return a String representing follow up advice on how to resolve the error
 
 ##### Summary
 
-By default, the error summary is the String provided by calling `my_error_type.to_string()` prefixed by "Error: ". 
+By default, the error summary is the String provided by calling `.to_string()` on the error and then prefixing it with "Error: ". 
 
 ##### Reasons
 
-By default the list of reasons is created by recursively calling `.source()` and prefixing each reason with a bullet point.
+By default the list of reasons is created by recursively calling `.source()` and prefixing each error in the chaing with a bullet point.
 
 ##### Helptext
 
-By default no helptext is added to type that implement UFE. You'll have to provide an implementation yourself. It is probably easier to convert your error type to a UserFacingError and use the `.help()` function provided by that type if you want to add help text before printing.
+By default no helptext is added to custom types that implement UFE. You'll either have to provide your own implementation, or call `.into_ufe()` to convert your error type to a UserFacingError and use the provided `.help(&str)` function to add one.
 
 ```rust
 use user_error::{UserFacingError, UFE};
 
 // Custom Error Type
 #[derive(Debug)]
-struct MyError { mssg: String, src: Option<MyError> }
+struct MyError { mssg: String, src: Option<Box<dyn Error>> }
 
 impl Display for MyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, mssg.to_string())
+        write!(f, "{}", self.mssg.to_string())
     }
 }
 
 impl Error for MyError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        self.src.as_ref()
+        self.src.as_deref()
     }
 }
 
 impl UFE for MyError {}
 
-#[test]
-fn custom_error_implements_ufe() {
+fn main() {
     let me = MyError {
         mssg: "Program Failed".into(),
-        src: Some(MyError {
+        src: Some(Box::new(MyError {
             mssg: "Reason 1".into(),
-            sub: Some(MyError {
+            src: Some(Box::new(MyError {
                 mssg: "Reason 2".into(),
-                sub: None,
-            }),
-        },
+                src: None,
+            })),
+        })),
     };
+
     me.print();
+    println!("-----")
+    me.into_ufe().help("Helptext Added").print();
 }
 ```
 
@@ -145,14 +157,20 @@ This prints:
 Error: Program Failed
 - Reason 1
 - Reason 2
+-----
+Error: Program Failed
+- Reason 1
+- Reason 2
+Helptext Added
 ```
 
-#### Other Methods
+#### Trait Methods
 
-UFE provides two additional methods:
+UFE provides three useful methods:
 
 1. `.print()` - Pretty print the error
 2. `.print_and_exit()` - Pretty print the error and terminate the process
+3. `.into_ufe()` - consume a custom Error type and return a UserFacingError
 
 You could override these methods but then there is not much point in using this crate :p
 
@@ -163,14 +181,16 @@ Error: Program Failed!
 ```
 
 #### Print
-Pretty prints the UserFacingError to stderr
+Pretty prints the UserFacingError to stderr.
 
 ```rust
 use user_error::UserFacingError;
 
 fn main() {
     UserFacingError::new("Failed to build project")
-        .reason("Database could not be parsed")
+        .reason("Database config could not be parsed")
+        .reason("`db.config` not found")
+        .help("Try: touch db.config")
         .print_and_exit();
 }
 ```
@@ -178,18 +198,20 @@ fn main() {
 This prints:
 ```text
 Error: Failed to build project
- - Database could not be parsed
+ - Database config could not be parsed
+ - `db.config` not found
+Try: touch db.config
 ```
 
 #### Print and Exit
-Since constructing this error is likely the last thing your program will do, you can also call `.print_and_exit()` to print the error and then terminate the process with status code 1.
+Since constructing this error is likely the last thing your program will do, you can also call `.print_and_exit()` to print the error and then terminate the process with status code 1 as a convenience.
 
 ```rust
 use user_error::UserFacingError;
 
 fn main() {
     UserFacingError::new("Failed to build project")
-        .reason("Database could not be parsed")
+        .reason("Database config could not be parsed")
         .print_and_exit();
 }
 ```
@@ -197,18 +219,10 @@ fn main() {
 This prints:
 ```text
 Error: Failed to build project
- - Database could not be parsed
+ - Database config could not be parsed
 ```
 
 ### UserFacingError Type
-
-UserFacingError is an error type that helps you format and print good looking error messages for users of your CLI application. These errors are intended for consumption by a human, not your program. They are divided into 3 parts: summary, reasons and help text.
-
-**Summary:** A String representing a one-line description of your error. A summary is mandatory and is printed boldly in red.
-
-**Reasons:** A vector of Strings explaining in more detail _why_ this error occured. Reasons are optional and if the terminal supports color, the bullet point ('-') will be colored yellow. Each reason will be printed on its own line.
-
-**Help Text:** A String explaining additional information, including what the user can do about the error, or where to file a bug. Help text is optional and if the terminal supports color it will be printed _dimly_.
 
 #### Construction
 

@@ -10,3 +10,7 @@ readme = "README.md"
 keywords = ["errors", "pretty-print", "struct", "xvrqt"]
 categories = ["data-structures", "command-line-interface"]
 description = "UserFacingError is an error crate that allows you to pretty print your errors and error chain for consumption by the end user. If you implement the UFE trait, the default implementation will let your print your error nicely to the TTY. There is also the UserFacingError type that most std Errors can be converted into, or that you can use directly."
+
+[dependencies]
+syn = "1.0.18"
+quote = "1.0.4"

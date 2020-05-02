@@ -12,7 +12,7 @@
     unused_qualifications
 )]
 
-/* Standard Library Dependencies */
+// Standard Library Dependencies
 use core::fmt::{self, Debug, Display};
 use std::error::Error;
 
@@ -154,7 +154,7 @@ pub trait UFE: Error {
     /// use user_error::{UserFacingError, UFE};
     /// use std::fmt::{self, Display};
     /// use std::error::Error;
-    /// 
+    ///
     /// #[derive(Debug)]
     /// struct MyError {}
     ///
@@ -169,16 +169,16 @@ pub trait UFE: Error {
     /// }
     ///
     /// impl UFE for MyError {}
-    /// 
+    ///
     /// fn main() {
     ///     let me = MyError {};
     ///     me.print();
-    ///     me.to_ufe()
+    ///     me.into_ufe()
     ///         .help("Added helptext")
     ///         .print();
     /// }
     /// ```
-    fn to_ufe(&self) -> UserFacingError {
+    fn into_ufe(&self) -> UserFacingError {
         UserFacingError {
             summary: self.summary(),
             reasons: self.reasons(),
@@ -368,7 +368,7 @@ impl UserFacingError {
         let old_summary = self.summary();
         match self.reasons.as_mut() {
             Some(reasons) => reasons.insert(0, old_summary),
-            None => self.reasons = Some(vec![old_summary.into()]),
+            None => self.reasons = Some(vec![old_summary]),
         }
 
         // Update the summary
@@ -621,5 +621,42 @@ mod tests {
         Err(Box::new(SuperError {
             side: SuperErrorSideKick,
         }))
+    }
+
+    // Custom Error Type
+    #[derive(Debug)]
+    struct MyError {
+        mssg: String,
+        src: Option<Box<dyn Error>>,
+    }
+
+    impl Display for MyError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.mssg.to_string())
+        }
+    }
+
+    impl Error for MyError {
+        fn source(&self) -> Option<&(dyn Error + 'static)> {
+            self.src.as_deref()
+        }
+    }
+
+    impl UFE for MyError {}
+
+    #[test]
+    fn custom_error_implements_ufe() {
+        let me = MyError {
+            mssg: "Program Failed".into(),
+            src: Some(Box::new(MyError {
+                mssg: "Reason 1".into(),
+                src: Some(Box::new(MyError {
+                    mssg: "Reason 2".into(),
+                    src: None,
+                })),
+            })),
+        };
+        me.print();
+        me.into_ufe().help("Helptext Added").print();
     }
 }
