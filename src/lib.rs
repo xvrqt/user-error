@@ -24,7 +24,7 @@ use std::error::Error;
 const SUMMARY_PREFIX: &str = "\u{001b}[97;41;22mError:\u{001b}[91;49;1m ";
 // ' - ' bullet point in yellow and text in bold white
 const REASON_PREFIX: &str = "\u{001b}[93;49;1m - \u{001b}[97;49;1m";
-// Muted white helptext
+// Dim white helptext
 const HELPTEXT_PREFIX: &str = "\u{001b}[37;49;2m";
 // ASCII Reset formatting escape code
 const RESET: &str = "\u{001b}[0m";
