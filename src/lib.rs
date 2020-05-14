@@ -19,14 +19,6 @@
 use core::fmt::{self, Debug, Display};
 use std::error::Error;
 
-/*********
- * TYPES *
-**********/
-type Summary = String;
-type Reasons = Option<Vec<String>>;
-type Helptext = Option<String>;
-type Source = Option<Box<(dyn Error)>>;
-
 /*************
  * CONSTANTS *
  *************/
@@ -214,6 +206,10 @@ pub trait UFE: Error {
 /**********
  * STRUCT *
  **********/
+type Summary = String;
+type Reasons = Option<Vec<String>>;
+type Helptext = Option<String>;
+type Source = Option<Box<(dyn Error)>>;
 
 /// The eponymous struct. You can create a new one from using
 /// user_error::UserFacingError::new() however I recommend you use your own
