@@ -281,11 +281,6 @@ fn get_ufe_struct_members(error: &(dyn Error)) -> (Summary, Reasons) {
     (summary, reasons)
 }
 
-//
-// Instead of converting from std Error, convert from types that implement UFE :)
-// Don't have my type implement std Error
-//
-
 /// Allows you to create UserFacingErrors From std::io::Error for convenience
 /// You should really just implement UFE for your error type, but if you wanted
 /// to convert before quitting so you could add help text of something you can
@@ -365,9 +360,9 @@ impl UserFacingError {
     /// # use user_error::UserFacingError;
     /// let err = UserFacingError::new("File failed to open");
     /// ```
-    pub fn new(summary: &str) -> UserFacingError {
+    pub fn new<S: Into<String>>(summary: S) -> UserFacingError {
         UserFacingError {
-            summary: summary.to_string(),
+            summary: summary.into(),
             reasons: None,
             helptext: None,
             source: None,
@@ -381,7 +376,7 @@ impl UserFacingError {
     /// let mut err = UserFacingError::new("File failed to open");
     /// err.update("Failed Task");
     /// ```
-    pub fn update(&mut self, summary: &str) {
+    pub fn update<S: Into<String>>(&mut self, summary: S) {
         self.summary = summary.into();
     }
 
@@ -393,7 +388,7 @@ impl UserFacingError {
     /// let mut err = UserFacingError::new("File failed to open");
     /// err.push("Failed Task");
     /// ```
-    pub fn push(&mut self, new_summary: &str) {
+    pub fn push<S: Into<String>>(&mut self, new_summary: S) {
         // Add the old summary to the list of reasons
         let old_summary = self.summary();
         match self.reasons.as_mut() {
@@ -402,7 +397,7 @@ impl UserFacingError {
         }
 
         // Update the summary
-        self.summary = new_summary.to_string();
+        self.summary = new_summary.into();
     }
 
     /// Add a reason to the UserFacingError. Reasons are displayed in a
@@ -414,7 +409,7 @@ impl UserFacingError {
     ///                             .reason("File not found")
     ///                             .reason("Directory cannot be entered");
     /// ```
-    pub fn reason(mut self, reason: &str) -> UserFacingError {
+    pub fn reason<S: Into<String>>(mut self, reason: S) -> UserFacingError {
         self.reasons = match self.reasons {
             Some(mut reasons) => {
                 reasons.push(reason.into());
@@ -449,7 +444,7 @@ impl UserFacingError {
     ///                             .reason("File not found")
     ///                             .help("Check if the file exists.");
     /// ```
-    pub fn help(mut self, helptext: &str) -> UserFacingError {
+    pub fn help<S: Into<String>>(mut self, helptext: S) -> UserFacingError {
         self.helptext = Some(helptext.into());
         self
     }
