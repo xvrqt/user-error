@@ -1,5 +1,8 @@
 //! # User Facing Error
-//! A library for conveniently displaying well-formatted, and good looking errors to users of CLI applications. Useful for bubbling up unrecoverable errors to inform the user what they can do to fix them. Error messages you'd be proud to show your mom.
+//! A library for conveniently displaying well-formatted, and good looking
+//! errors to users of CLI applications. Useful for bubbling up unrecoverable
+//! errors to inform the user what they can do to fix them. Error messages you'd
+//! be proud to show your mom.
 #![deny(
     missing_docs,
     missing_debug_implementations,
@@ -12,7 +15,7 @@
     unused_qualifications
 )]
 
-/* Standard Library Dependencies */
+// Standard Library Dependencies
 use core::fmt::{self, Debug, Display};
 use std::error::Error;
 
@@ -24,13 +27,14 @@ use std::error::Error;
 const SUMMARY_PREFIX: &str = "\u{001b}[97;41;22mError:\u{001b}[91;49;1m ";
 // ' - ' bullet point in yellow and text in bold white
 const REASON_PREFIX: &str = "\u{001b}[93;49;1m - \u{001b}[97;49;1m";
-// Dim white helptext
+// Muted white help text
 const HELPTEXT_PREFIX: &str = "\u{001b}[37;49;2m";
 // ASCII Reset formatting escape code
 const RESET: &str = "\u{001b}[0m";
 
 // Helper function to keep things DRY
-// Takes a dyn Error.source() and returns a Vec of Strings representing all the .sources() in the error chain (if any)
+// Takes a dyn Error.source() and returns a Vec of Strings representing all the
+// .sources() in the error chain (if any)
 fn error_sources(mut source: Option<&(dyn Error + 'static)>) -> Option<Vec<String>> {
     /* Check if we have any sources to derive reasons from */
     if source.is_some() {
@@ -50,62 +54,69 @@ fn error_sources(mut source: Option<&(dyn Error + 'static)>) -> Option<Vec<Strin
  * TRAIT *
  *********/
 
-/// You can implement UFE on your error types pretty print them. The default implementation will print Error: <your error .to_string()> followed by a list of reasons that are any errors returned by .source()
-/// You should only override the summary, reasons and helptext functions. The pretty print versions of these are used by print(), print_and_exit() and contain the formatting. If you wish to change the formatting you should update it with the formatting functions.
+// Helper Functions
+
+/// Convenience function that converts the summary into pretty String.
+fn pretty_summary(summary: &str) -> String {
+    [SUMMARY_PREFIX, summary, RESET].concat()
+}
+
+/// Convenience function that converts the reasons into pretty String.
+fn pretty_reasons(reasons: Reasons) -> Option<String> {
+    /* Print list of Reasons (if any) */
+    if let Some(reasons) = reasons {
+        /* Vector to store the intermediate bullet point strings */
+        let mut reason_strings = Vec::with_capacity(reasons.len());
+        for reason in reasons {
+            let bullet_point = [REASON_PREFIX, &reason].concat();
+            reason_strings.push(bullet_point);
+        }
+        /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
+        Some([&reason_strings.join("\n"), RESET].concat())
+    } else {
+        None
+    }
+}
+
+/// Convenience function that converts the help text into pretty String.
+fn pretty_helptext(helptext: Helptext) -> Option<String> {
+    if let Some(helptext) = helptext {
+        Some([HELPTEXT_PREFIX, &helptext, RESET].concat())
+    } else {
+        None
+    }
+}
+
+/// You can implement UFE on your error types pretty print them. The default
+/// implementation will print Error: <your error .to_string()> followed by a list
+/// of reasons that are any errors returned by .source(). You should only
+/// override the summary, reasons and help text functions. The pretty print
+/// versions of these are used by print(), print_and_exit() and contain the
+/// formatting. If you wish to change the formatting you should update it with
+/// the formatting functions.
 pub trait UFE: Error {
     /**************
      * IMPLENT ME *
      **************/
 
-    /// Returns a summary of the error. This will be printed in red, prefixed by "Error: ", at the top of the error message. This is not Optional.
+    /// Returns a summary of the error. This will be printed in red, prefixed
+    /// by "Error: ", at the top of the error message.
     fn summary(&self) -> String {
         self.to_string()
     }
 
-    /// Returns a vector of Strings that will be listed as bullet points below the summary. By default, lists any errors returned by .source() recursively.
+    /// Returns a vector of Strings that will be listed as bullet points below
+    /// the summary. By default, lists any errors returned by .source()
+    /// recursively.
     fn reasons(&self) -> Option<Vec<String>> {
         /* Helper function to keep things DRY */
         error_sources(self.source())
     }
 
-    /// Returns help text that is listed below the reasons in a muted fashion. Useful for additional details, or suggested next steps.
+    /// Returns help text that is listed below the reasons in a muted fashion.
+    /// Useful for additional details, or suggested next steps.
     fn helptext(&self) -> Option<String> {
         None
-    }
-
-    /****************
-     * PRETTY PRINT *
-     ****************/
-
-    /// Convenience function that converts the summary into pretty String. You shouldn't implement this.
-    fn pretty_summary(&self) -> String {
-        [SUMMARY_PREFIX, &self.summary(), RESET].concat()
-    }
-
-    /// Convenience function that converts the reasons into pretty String. You shouldn't implement this.
-    fn pretty_reasons(&self) -> Option<String> {
-        /* Print list of Reasons (if any) */
-        if let Some(reasons) = self.reasons() {
-            /* Vector to store the intermediate bullet point strings */
-            let mut reason_strings = Vec::with_capacity(reasons.len());
-            for reason in reasons {
-                let bullet_point = [REASON_PREFIX, &reason].concat();
-                reason_strings.push(bullet_point);
-            }
-            /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
-            Some([&reason_strings.join("\n"), RESET].concat())
-        } else {
-            None
-        }
-    }
-
-    /// Convenience function that converts the help text into pretty String. You shouldn't implement this.
-    fn pretty_helptext(&self) -> Option<String> {
-        if let Some(helptext) = self.helptext() {
-            Some([HELPTEXT_PREFIX, &helptext, RESET].concat())
-        } else {
-            None
-        }
     }
 
     /**********
@@ -123,15 +134,15 @@ pub trait UFE: Error {
     /// ```
     fn print(&self) {
         /* Print Summary */
-        eprintln!("{}", self.pretty_summary());
+        eprintln!("{}", pretty_summary(&self.summary()));
 
         /* Print list of Reasons (if any) */
-        if let Some(reasons) = self.pretty_reasons() {
+        if let Some(reasons) = pretty_reasons(self.reasons()) {
             eprintln!("{}", reasons);
         }
 
         /* Print help text (if any) */
-        if let Some(helptext) = self.pretty_helptext() {
+        if let Some(helptext) = pretty_helptext(self.helptext()) {
             eprintln!("{}", helptext);
         }
     }
@@ -149,6 +160,47 @@ pub trait UFE: Error {
         self.print();
         std::process::exit(1)
     }
+
+    /// Consumes the UFE and returns a UserFacingError. Useful if you want
+    /// access to additional functions to edit the error message before exiting
+    /// the program.
+    /// # Example
+    /// ```
+    /// use user_error::{UserFacingError, UFE};
+    /// use std::fmt::{self, Display};
+    /// use std::error::Error;
+    ///
+    /// #[derive(Debug)]
+    /// struct MyError {}
+    ///
+    /// impl Display for MyError {
+    ///     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    ///         write!(f, "MyError")
+    ///     }
+    /// }
+    ///
+    /// impl Error for MyError {
+    ///     fn source(&self) -> Option<&(dyn Error + 'static)> { None }
+    /// }
+    ///
+    /// impl UFE for MyError {}
+    ///
+    /// fn main() {
+    ///     let me = MyError {};
+    ///     me.print();
+    ///     me.into_ufe()
+    ///         .help("Added help text")
+    ///         .print();
+    /// }
+    /// ```
+    fn into_ufe(&self) -> UserFacingError {
+        UserFacingError {
+            summary: self.summary(),
+            reasons: self.reasons(),
+            helptext: self.helptext(),
+            source: None,
+        }
+    }
 }
 
 /**********
@@ -159,8 +211,11 @@ type Reasons = Option<Vec<String>>;
 type Helptext = Option<String>;
 type Source = Option<Box<(dyn Error)>>;
 
-/// The eponymous struct. You can create a new one from using user_error::UserFacingError::new()
-/// I recommend you use your own error types and have them implement UFE instead of useing UserFacingError directly. This is more of an example type, or a way to construct a pretty message.
+/// The eponymous struct. You can create a new one from using
+/// user_error::UserFacingError::new() however I recommend you use your own
+/// error types and have them implement UFE instead of using UserFacingError
+/// directly. This is more of an example type, or a way to construct a pretty
+/// messages without implementing your own error type.
 #[derive(Debug)]
 pub struct UserFacingError {
     summary: Summary,
@@ -173,28 +228,14 @@ pub struct UserFacingError {
  * IMPLEMENTATION *
  ******************/
 
-// Implement our own trait for our example struct
-// Cloning is not super efficient but this should be the last thing a program does, and it will only do it once so... ¯\_(ツ)_/¯
-impl UFE for UserFacingError {
-    fn summary(&self) -> Summary {
-        self.summary.clone()
-    }
-    fn reasons(&self) -> Reasons {
-        self.reasons.clone()
-    }
-    fn helptext(&self) -> Helptext {
-        self.helptext.clone()
-    }
-}
-
 // Implement Display so our struct also implements std::error::Error
 impl Display for UserFacingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let summary = self.pretty_summary();
-        let reasons = self.pretty_reasons();
-        let helptext = self.pretty_helptext();
+        let summary = pretty_summary(&self.summary());
+        let reasons = pretty_reasons(self.reasons());
+        let helptext = pretty_helptext(self.helptext());
 
-        /* Love this - thanks Rust! */
+        // Love this - thanks Rust!
         match (summary, reasons, helptext) {
             (summary, None, None) => writeln!(f, "{}", summary),
             (summary, Some(reasons), None) => writeln!(f, "{}\n{}", summary, reasons),
@@ -216,6 +257,21 @@ impl Error for UserFacingError {
     }
 }
 
+// Implement our own trait for our example struct
+// Cloning is not super efficient but this should be the last thing a program
+// does, and it will only do it once so... ¯\_(ツ)_/¯
+impl UFE for UserFacingError {
+    fn summary(&self) -> Summary {
+        self.summary.clone()
+    }
+    fn reasons(&self) -> Reasons {
+        self.reasons.clone()
+    }
+    fn helptext(&self) -> Helptext {
+        self.helptext.clone()
+    }
+}
+
 // Helper function to keep things DRY
 fn get_ufe_struct_members(error: &(dyn Error)) -> (Summary, Reasons) {
     /* Error Display format is the summary */
@@ -226,7 +282,9 @@ fn get_ufe_struct_members(error: &(dyn Error)) -> (Summary, Reasons) {
 }
 
 /// Allows you to create UserFacingErrors From std::io::Error for convenience
-/// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext of something you can use this.
+/// You should really just implement UFE for your error type, but if you wanted
+/// to convert before quitting so you could add help text of something you can
+/// use this.
 impl From<std::io::Error> for UserFacingError {
     fn from(error: std::io::Error) -> UserFacingError {
         let (summary, reasons) = get_ufe_struct_members(&error);
@@ -241,7 +299,9 @@ impl From<std::io::Error> for UserFacingError {
 }
 
 /// Allows you to create UserFacingErrors From std Errors.
-/// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext of something you can use this.
+/// You should really just implement UFE for your error type, but if you wanted
+/// to convert before quitting so you could add help text of something you can
+/// use this.
 impl From<Box<(dyn Error)>> for UserFacingError {
     fn from(error: Box<(dyn Error)>) -> UserFacingError {
         let (summary, reasons) = get_ufe_struct_members(error.as_ref());
@@ -256,7 +316,9 @@ impl From<Box<(dyn Error)>> for UserFacingError {
 }
 
 /// Allows you to create UserFacingErrors From std Errors.
-/// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext or something you can use this.
+/// You should really just implement UFE for your error type, but if you wanted
+/// to convert before quitting so you could add help text of something you can
+/// use this.
 impl From<&(dyn Error)> for UserFacingError {
     fn from(error: &(dyn Error)) -> UserFacingError {
         let (summary, reasons) = get_ufe_struct_members(error);
@@ -271,7 +333,9 @@ impl From<&(dyn Error)> for UserFacingError {
 }
 
 /// Allows you to create UserFacingErrors From std Errors wrapped in a Result
-/// You should really just implement UFE for your error type, but if you wanted to convert before quitting so you could add helptext or something you can use this.
+/// You should really just implement UFE for your error type, but if you wanted
+/// to convert before quitting so you could add help text of something you can
+/// use this.
 impl<T: Debug> From<Result<T, Box<dyn Error>>> for UserFacingError {
     fn from(error: Result<T, Box<dyn Error>>) -> UserFacingError {
         /* Panics if you try to convert an Ok() Result to a UserFacingError */
@@ -287,17 +351,18 @@ impl<T: Debug> From<Result<T, Box<dyn Error>>> for UserFacingError {
     }
 }
 
-// Implement convenience functions to modify the UserFacingError struct
 impl UserFacingError {
-    /// This is how users create a new User Facing Error. The value passed to new() will be used as an error summary. Error summaries are displayed first, prefixed by 'Error: '.
+    /// This is how users create a new User Facing Error. The value passed to
+    /// new() will be used as an error summary. Error summaries are displayed
+    /// first, prefixed by 'Error: '.
     /// # Example
     /// ```
     /// # use user_error::UserFacingError;
     /// let err = UserFacingError::new("File failed to open");
     /// ```
-    pub fn new(summary: &str) -> UserFacingError {
+    pub fn new<S: Into<String>>(summary: S) -> UserFacingError {
         UserFacingError {
-            summary: summary.to_string(),
+            summary: summary.into(),
             reasons: None,
             helptext: None,
             source: None,
@@ -311,30 +376,32 @@ impl UserFacingError {
     /// let mut err = UserFacingError::new("File failed to open");
     /// err.update("Failed Task");
     /// ```
-    pub fn update(&mut self, summary: &str) {
+    pub fn update<S: Into<String>>(&mut self, summary: S) {
         self.summary = summary.into();
     }
 
-    /// Replace the error summary and add the previous error summary to the list of reasons
+    /// Replace the error summary and add the previous error summary to the
+    /// list of reasons
     /// # Example
     /// ```
     /// # use user_error::UserFacingError;
     /// let mut err = UserFacingError::new("File failed to open");
     /// err.push("Failed Task");
     /// ```
-    pub fn push(&mut self, new_summary: &str) {
+    pub fn push<S: Into<String>>(&mut self, new_summary: S) {
         // Add the old summary to the list of reasons
         let old_summary = self.summary();
         match self.reasons.as_mut() {
             Some(reasons) => reasons.insert(0, old_summary),
-            None => self.reasons = Some(vec![old_summary.into()]),
+            None => self.reasons = Some(vec![old_summary]),
         }
 
         // Update the summary
-        self.summary = new_summary.to_string();
+        self.summary = new_summary.into();
     }
 
-    /// Add a reason to the UserFacingError. Reasons are displayed in a bulleted list below the summary, in the reverse order they were added.
+    /// Add a reason to the UserFacingError. Reasons are displayed in a
+    /// bulleted list below the summary, in the reverse order they were added.
     /// # Example
     /// ```
     /// # use user_error::UserFacingError;
@@ -342,7 +409,7 @@ impl UserFacingError {
     ///                             .reason("File not found")
     ///                             .reason("Directory cannot be entered");
     /// ```
-    pub fn reason(mut self, reason: &str) -> UserFacingError {
+    pub fn reason<S: Into<String>>(mut self, reason: S) -> UserFacingError {
         self.reasons = match self.reasons {
             Some(mut reasons) => {
                 reasons.push(reason.into());
@@ -352,6 +419,8 @@ impl UserFacingError {
         };
         self
     }
+
+    // Return ref to previous?
 
     /// Clears all reasons from a UserFacingError.
     /// # Example
@@ -366,7 +435,8 @@ impl UserFacingError {
         self.reasons = None;
     }
 
-    /// Add help text to the error. Help text is displayed last, in a muted fashion.
+    /// Add help text to the error. Help text is displayed last, in a muted
+    /// fashion.
     /// # Example
     /// ```
     /// # use user_error::UserFacingError;
@@ -374,12 +444,12 @@ impl UserFacingError {
     ///                             .reason("File not found")
     ///                             .help("Check if the file exists.");
     /// ```
-    pub fn help(mut self, helptext: &str) -> UserFacingError {
+    pub fn help<S: Into<String>>(mut self, helptext: S) -> UserFacingError {
         self.helptext = Some(helptext.into());
         self
     }
 
-    /// Clears all the helptext from a UserFacingError.
+    /// Clears all the help text from a UserFacingError.
     /// # Example
     /// ```
     /// # use user_error::UserFacingError;
@@ -397,7 +467,7 @@ impl UserFacingError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    /* Statics to keep the testing DRY/cleaner */
+    // Statics to keep the testing DRY/cleaner
     static S: &'static str = "Test Error";
     static R: &'static str = "Reason 1";
     static H: &'static str = "Try Again";
@@ -437,7 +507,8 @@ mod tests {
             let bullet_point = [REASON_PREFIX, &reason].concat();
             reason_strings.push(bullet_point);
         }
-        /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
+        // Join the bullet points with a newline, append a RESET ASCII escape
+        // code to the end.
         let reasons = [&reason_strings.join("\n"), RESET].concat();
 
         let expected = format!("{}{}{}\n{}\n", SUMMARY_PREFIX, S, RESET, reasons);
@@ -457,7 +528,8 @@ mod tests {
             let bullet_point = [REASON_PREFIX, &reason].concat();
             reason_strings.push(bullet_point);
         }
-        /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
+        // Join the bullet points with a newline, append a RESET ASCII escape
+        // code to the end
         let reasons = [&reason_strings.join("\n"), RESET].concat();
 
         let expected = format!("{}{}{}\n{}\n", SUMMARY_PREFIX, "R2", RESET, reasons);
@@ -470,14 +542,15 @@ mod tests {
         let mut e = UserFacingError::new(S);
         e.push("S2");
 
-        /* Create Reasons String */
+        // Create Reasons String
         let reasons = vec![String::from(S)];
         let mut reason_strings = Vec::with_capacity(reasons.len());
         for reason in reasons {
             let bullet_point = [REASON_PREFIX, &reason].concat();
             reason_strings.push(bullet_point);
         }
-        /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
+        // Join the bullet points with a newline, append a RESET ASCII escape
+        // code to the end
         let reasons = [&reason_strings.join("\n"), RESET].concat();
 
         let expected = format!("{}{}{}\n{}\n", SUMMARY_PREFIX, "S2", RESET, reasons);
@@ -489,14 +562,16 @@ mod tests {
     fn reason_and_helptext_test() {
         let e = UserFacingError::new(S).reason(R).reason(R).help(H);
 
-        /* Create Reasons String */
+        // Create Reasons String
         let reasons = vec![String::from(R), String::from(R)];
         let mut reason_strings = Vec::with_capacity(reasons.len());
         for reason in reasons {
             let bullet_point = [REASON_PREFIX, &reason].concat();
             reason_strings.push(bullet_point);
         }
-        /* Join the buller points with a newline, append a RESET ASCII escape code to the end */
+
+        // Join the bullet points with a newline, append a RESET ASCII escape
+        // code to the end
         let reasons = [&reason_strings.join("\n"), RESET].concat();
 
         let expected = format!(
@@ -512,11 +587,11 @@ mod tests {
         let error_text = "Error";
         let ioe = std::io::Error::new(std::io::ErrorKind::Other, error_text);
 
-        /* Lose the type */
+        // Lose the type
         fn de(ioe: std::io::Error) -> Box<dyn Error> {
             Box::new(ioe)
         }
-        /* Convert to UFE */
+        // Convert to UFE
         let ufe: UserFacingError = de(ioe).into();
 
         let expected = [SUMMARY_PREFIX, error_text, RESET, "\n"].concat();
@@ -541,7 +616,7 @@ mod tests {
         assert_eq!(ufe.to_string(), expected);
     }
 
-    /* Used for to test that source is working correctly */
+    // Used for to test that source is working correctly
     #[derive(Debug)]
     struct SuperError {
         side: SuperErrorSideKick,
@@ -578,5 +653,42 @@ mod tests {
         Err(Box::new(SuperError {
             side: SuperErrorSideKick,
         }))
+    }
+
+    // Custom Error Type
+    #[derive(Debug)]
+    struct MyError {
+        mssg: String,
+        src: Option<Box<dyn Error>>,
+    }
+
+    impl Display for MyError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.mssg.to_string())
+        }
+    }
+
+    impl Error for MyError {
+        fn source(&self) -> Option<&(dyn Error + 'static)> {
+            self.src.as_deref()
+        }
+    }
+
+    impl UFE for MyError {}
+
+    #[test]
+    fn custom_error_implements_ufe() {
+        let me = MyError {
+            mssg: "Program Failed".into(),
+            src: Some(Box::new(MyError {
+                mssg: "Reason 1".into(),
+                src: Some(Box::new(MyError {
+                    mssg: "Reason 2".into(),
+                    src: None,
+                })),
+            })),
+        };
+        me.print();
+        me.into_ufe().help("Helptext Added").print();
     }
 }

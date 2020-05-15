@@ -94,8 +94,5 @@ fn custom_error_implements_ufe() {
     me.summary();
     me.reasons();
     me.helptext();
-    me.pretty_summary();
-    me.pretty_reasons();
-    me.pretty_helptext();
     me.print();
 }
